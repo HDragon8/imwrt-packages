@@ -16,7 +16,7 @@ function mvdir() {
 mv -n `find $1/* -maxdepth 0 -type d` ./
 rm -rf $1
 }
-#git clone --depth 1 https://github.com/HDragon8/noodles-default-settings noodles-default-settings
+git clone --depth 1 https://github.com/HDragon8/imwrt-default-settings AAA/imwrt-default-settings
 git clone --depth 1 https://github.com/kiddin9/luci-theme-edge
 git clone --depth 1 https://github.com/kiddin9/openwrt-amule-dlp && mvdir openwrt-amule-dlp
 git clone --depth 1 https://github.com/yichya/luci-app-xray
