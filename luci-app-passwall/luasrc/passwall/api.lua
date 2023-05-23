@@ -1,5 +1,6 @@
 module("luci.passwall.api", package.seeall)
 local com = require "luci.passwall.com"
+bin = require "nixio".bin
 fs = require "nixio.fs"
 sys = require "luci.sys"
 uci = require"luci.model.uci".cursor()
@@ -18,12 +19,12 @@ LOG_FILE = "/tmp/log/" .. appname .. ".log"
 CACHE_PATH = "/tmp/etc/" .. appname .. "_tmp"
 
 function log(...)
-    local result = os.date("%Y-%m-%d %H:%M:%S: ") .. table.concat({...}, " ")
-    local f, err = io.open(LOG_FILE, "a")
-    if f and err == nil then
-        f:write(result .. "\n")
-        f:close()
-    end
+	local result = os.date("%Y-%m-%d %H:%M:%S: ") .. table.concat({...}, " ")
+	local f, err = io.open(LOG_FILE, "a")
+	if f and err == nil then
+		f:write(result .. "\n")
+		f:close()
+	end
 end
 
 function exec_call(cmd)
@@ -322,7 +323,7 @@ function get_valid_nodes()
 	return nodes
 end
 
-function get_full_node_remarks(n)
+function get_node_remarks(n)
 	local remarks = ""
 	if n then
 		if n.protocol and (n.protocol == "_balancing" or n.protocol == "_shunt" or n.protocol == "_iface") then
@@ -340,7 +341,17 @@ function get_full_node_remarks(n)
 				end
 				type2 = type2 .. " " .. protocol
 			end
-			remarks = "%s：[%s] %s:%s" % {type2, n.remarks, n.address, n.port}
+			remarks = "%s：[%s]" % {type2, n.remarks}
+		end
+	end
+	return remarks
+end
+
+function get_full_node_remarks(n)
+	local remarks = get_node_remarks(n)
+	if #remarks > 0 then
+		if n.address and n.port then
+			remarks = remarks .. " " .. n.address .. ":" .. n.port
 		end
 	end
 	return remarks
@@ -352,6 +363,10 @@ function gen_uuid(format)
 		uuid = string.gsub(uuid, "-", "")
 	end
 	return uuid
+end
+
+function gen_short_uuid()
+	return sys.exec("echo -n $(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8)")
 end
 
 function uci_get_type(type, config, default)
@@ -598,6 +613,44 @@ local function auto_get_arch()
 	end
 
 	return util.trim(arch)
+end
+
+function parseURL(url)
+	if not url or url == "" then
+		return nil
+	end
+	local pattern = "^(%w+)://"
+	local protocol = url:match(pattern)
+
+	if not protocol then
+		--error("Invalid URL: " .. url)
+		return nil
+	end
+
+	local auth_host_port = url:sub(#protocol + 4)
+	local auth_pattern = "^([^@]+)@"
+	local auth = auth_host_port:match(auth_pattern)
+	local username, password
+
+	if auth then
+		username, password = auth:match("^([^:]+):([^:]+)$")
+		auth_host_port = auth_host_port:sub(#auth + 2)
+	end
+
+	local host, port = auth_host_port:match("^([^:]+):(%d+)$")
+
+	if not host or not port then
+		--error("Invalid URL: " .. url)
+		return nil
+	end
+
+	return {
+		protocol = protocol,
+		username = username,
+		password = password,
+		host = host,
+		port = tonumber(port)
+	}
 end
 
 local default_file_tree = {
@@ -861,7 +914,6 @@ function to_check_self()
 	end
 	local local_version  = get_version()
 	local remote_version = sys.exec("echo -n $(grep 'PKG_VERSION' /tmp/passwall_makefile|awk -F '=' '{print $2}')")
-				.. "-" ..  sys.exec("echo -n $(grep 'PKG_RELEASE' /tmp/passwall_makefile|awk -F '=' '{print $2}')")
 
 	local has_update = compare_versions(local_version, "<", remote_version)
 	if not has_update then

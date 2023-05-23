@@ -9,29 +9,29 @@ m = Map(appname)
 
 local nodes_table = {}
 for k, e in ipairs(api.get_valid_nodes()) do
-    nodes_table[#nodes_table + 1] = e
+	nodes_table[#nodes_table + 1] = e
 end
 
 local doh_validate = function(self, value, t)
-    if value ~= "" then
-        local flag = 0
-        local util = require "luci.util"
-        local val = util.split(value, ",")
-        local url = val[1]
-        val[1] = nil
-        for i = 1, #val do
-            local v = val[i]
-            if v then
-                if not datatypes.ipmask4(v) then
-                    flag = 1
-                end
-            end
-        end
-        if flag == 0 then
-            return value
-        end
-    end
-    return nil, translate("DoH request address") .. " " .. translate("Format must be:") .. " URL,IP"
+	if value ~= "" then
+		local flag = 0
+		local util = require "luci.util"
+		local val = util.split(value, ",")
+		local url = val[1]
+		val[1] = nil
+		for i = 1, #val do
+			local v = val[i]
+			if v then
+				if not datatypes.ipmask4(v) then
+					flag = 1
+				end
+			end
+		end
+		if flag == 0 then
+			return value
+		end
+	end
+	return nil, translate("DoH request address") .. " " .. translate("Format must be:") .. " URL,IP"
 end
 
 m:append(Template(appname .. "/global/status"))
@@ -46,85 +46,112 @@ s:tab("Main", translate("Main"))
 o = s:taboption("Main", Flag, "enabled", translate("Main switch"))
 o.rmempty = false
 
+local auto_switch_tip
+local shunt_remark
+local current_node = luci.sys.exec(string.format("[ -f '/tmp/etc/%s/id/global' ] && echo -n $(cat /tmp/etc/%s/id/global)", appname, appname))
+if current_node and current_node ~= "" and current_node ~= "nil" then
+	local n = uci:get_all(appname, current_node)
+	if n then
+		if tonumber(m:get("@auto_switch[0]", "enable") or 0) == 1 then
+			if n.protocol == "_shunt" then
+				local shunt_logic = tonumber(m:get("@auto_switch[0]", "shunt_logic"))
+				if shunt_logic == 1 or shunt_logic == 2 then
+					if shunt_logic == 1 then
+						shunt_remark = "default"
+					elseif shunt_logic == 2 then
+						shunt_remark = "main"
+					end
+					current_node = luci.sys.exec(string.format("[ -f '/tmp/etc/%s/id/global_%s' ] && echo -n $(cat /tmp/etc/%s/id/global_%s)", appname, shunt_remark, appname, shunt_remark))
+					if current_node and current_node ~= "" and current_node ~= "nil" then
+						n = uci:get_all(appname, current_node)
+					end
+				end
+			end
+			if n then
+				local remarks = api.get_node_remarks(n)
+				local url = api.url("node_config", n[".name"])
+				auto_switch_tip = translatef("Current node: %s", string.format('<a href="%s">%s</a>', url, remarks)) .. "<br />"
+			end
+		end
+	end
+end
+
 ---- Node
 node = s:taboption("Main", ListValue, "node", "<a style='color: red'>" .. translate("Node") .. "</a>")
-node.description = ""
-local current_node = luci.sys.exec(string.format("[ -f '/tmp/etc/%s/id/TCP' ] && echo -n $(cat /tmp/etc/%s/id/TCP)", appname, appname))
-if current_node and current_node ~= "" and current_node ~= "nil" then
-    local n = uci:get_all(appname, current_node)
-    if n then
-        if tonumber(m:get("@auto_switch[0]", "enable") or 0) == 1 then
-            local remarks = api.get_full_node_remarks(n)
-            local url = api.url("node_config", current_node)
-            node.description = node.description .. translatef("Current node: %s", string.format('<a href="%s">%s</a>', url, remarks)) .. "<br />"
-        end
-    end
-end
 node:value("nil", translate("Close"))
+if not shunt_remark and auto_switch_tip then
+	node.description = auto_switch_tip
+end
 
 -- 分流
 if (has_v2ray or has_xray) and #nodes_table > 0 then
-    local normal_list = {}
-    local shunt_list = {}
-    for k, v in pairs(nodes_table) do
-        if v.node_type == "normal" then
-            normal_list[#normal_list + 1] = v
-        end
-        if v.protocol and v.protocol == "_shunt" then
-            shunt_list[#shunt_list + 1] = v
-        end
-    end
-    for k, v in pairs(shunt_list) do
-        uci:foreach(appname, "shunt_rules", function(e)
-            local id = e[".name"]
-            if id and e.remarks then
-                o = s:taboption("Main", ListValue, v.id .. "." .. id .. "_node", string.format('* <a href="%s" target="_blank">%s</a>', api.url("shunt_rules", id), e.remarks))
-                o:depends("node", v.id)
-                o:value("nil", translate("Close"))
-                o:value("_default", translate("Default"))
-                o:value("_direct", translate("Direct Connection"))
-                o:value("_blackhole", translate("Blackhole"))
-                for k1, v1 in pairs(normal_list) do
-                    o:value(v1.id, v1["remark"])
-                end
-                o.cfgvalue = function(self, section)
-                    return m:get(v.id, id) or "nil"
-                end
-                o.write = function(self, section, value)
-                    m:set(v.id, id, value)
-                end
-            end
-        end)
+	local normal_list = {}
+	local shunt_list = {}
+	for k, v in pairs(nodes_table) do
+		if v.node_type == "normal" then
+			normal_list[#normal_list + 1] = v
+		end
+		if v.protocol and v.protocol == "_shunt" then
+			shunt_list[#shunt_list + 1] = v
+		end
+	end
+	for k, v in pairs(shunt_list) do
+		uci:foreach(appname, "shunt_rules", function(e)
+			local id = e[".name"]
+			if id and e.remarks then
+				o = s:taboption("Main", ListValue, v.id .. "." .. id .. "_node", string.format('* <a href="%s" target="_blank">%s</a>', api.url("shunt_rules", id), e.remarks))
+				o:depends("node", v.id)
+				o:value("nil", translate("Close"))
+				o:value("_default", translate("Default"))
+				o:value("_direct", translate("Direct Connection"))
+				o:value("_blackhole", translate("Blackhole"))
+				for k1, v1 in pairs(normal_list) do
+					o:value(v1.id, v1["remark"])
+				end
+				o.cfgvalue = function(self, section)
+					return m:get(v.id, id) or "nil"
+				end
+				o.write = function(self, section, value)
+					m:set(v.id, id, value)
+				end
+			end
+		end)
 
-        local id = "default_node"
-        o = s:taboption("Main", ListValue, v.id .. "." .. id, string.format('* <a style="color:red">%s</a>', translate("Default")))
-        o:depends("node", v.id)
-        o:value("_direct", translate("Direct Connection"))
-        o:value("_blackhole", translate("Blackhole"))
-        for k1, v1 in pairs(normal_list) do
-            o:value(v1.id, v1["remark"])
-        end
-        o.cfgvalue = function(self, section)
-            return m:get(v.id, id) or "nil"
-        end
-        o.write = function(self, section, value)
-            m:set(v.id, id, value)
-        end
-        
-        local id = "main_node"
-        o = s:taboption("Main", ListValue, v.id .. "." .. id, string.format('* <a style="color:red">%s</a>', translate("Default Preproxy")), translate("When using, localhost will connect this node first and then use this node to connect the default node."))
-        o:depends("node", v.id)
-        o:value("nil", translate("Close"))
-        for k1, v1 in pairs(normal_list) do
-            o:value(v1.id, v1["remark"])
-        end
-        o.cfgvalue = function(self, section)
-            return m:get(v.id, id) or "nil"
-        end
-        o.write = function(self, section, value)
-            m:set(v.id, id, value)
-        end
-    end
+		local id = "default_node"
+		o = s:taboption("Main", ListValue, v.id .. "." .. id, string.format('* <a style="color:red">%s</a>', translate("Default")))
+		o:depends("node", v.id)
+		o:value("_direct", translate("Direct Connection"))
+		o:value("_blackhole", translate("Blackhole"))
+		for k1, v1 in pairs(normal_list) do
+			o:value(v1.id, v1["remark"])
+		end
+		o.cfgvalue = function(self, section)
+			return m:get(v.id, id) or "nil"
+		end
+		o.write = function(self, section, value)
+			m:set(v.id, id, value)
+		end
+		if shunt_remark == "default" and auto_switch_tip then
+			o.description = auto_switch_tip
+		end
+		
+		local id = "main_node"
+		o = s:taboption("Main", ListValue, v.id .. "." .. id, string.format('* <a style="color:red">%s</a>', translate("Default Preproxy")), translate("When using, localhost will connect this node first and then use this node to connect the default node."))
+		o:depends("node", v.id)
+		o:value("nil", translate("Close"))
+		for k1, v1 in pairs(normal_list) do
+			o:value(v1.id, v1["remark"])
+		end
+		o.cfgvalue = function(self, section)
+			return m:get(v.id, id) or "nil"
+		end
+		o.write = function(self, section, value)
+			m:set(v.id, id, value)
+		end
+		if shunt_remark == "main" and auto_switch_tip then
+			o.description = auto_switch_tip
+		end
+	end
 end
 
 o = s:taboption("Main", Flag, "localhost_proxy", translate("Localhost Proxy"), translate("When selected, localhost can transparent proxy."))
@@ -137,9 +164,9 @@ node_socks_port.datatype = "port"
 
 --[[
 if has_v2ray or has_xray then
-    node_http_port = s:taboption("Main", Value, "node_http_port", translate("Node") .. " HTTP " .. translate("Listen Port") .. " " .. translate("0 is not use"))
-    node_http_port.default = 0
-    node_http_port.datatype = "port"
+	node_http_port = s:taboption("Main", Value, "node_http_port", translate("Node") .. " HTTP " .. translate("Listen Port") .. " " .. translate("0 is not use"))
+	node_http_port.default = 0
+	node_http_port.datatype = "port"
 end
 ]]--
 
@@ -173,7 +200,7 @@ o:depends("direct_dns_protocol", "doh")
 
 o = s:taboption("DNS", Value, "direct_dns_client_ip", translate("Direct DNS EDNS Client Subnet"))
 o.description = translate("Notify the DNS server when the DNS query is notified, the location of the client (cannot be a private IP address).") .. "<br />" ..
-                translate("This feature requires the DNS server to support the Edns Client Subnet (RFC7871).")
+				translate("This feature requires the DNS server to support the Edns Client Subnet (RFC7871).")
 o.datatype = "ipaddr"
 o:depends("direct_dns_protocol", "tcp")
 o:depends("direct_dns_protocol", "doh")
@@ -188,11 +215,6 @@ o = s:taboption("DNS", ListValue, "remote_dns_protocol", translate("Remote DNS P
 o:value("tcp", "TCP")
 o:value("doh", "DoH")
 o:value("udp", "UDP")
-o:value("fakedns", "FakeDNS")
-
-o = s:taboption("DNS", Flag, "only_proxy_fakedns", translate("Only Proxy FakeDNS"), translate("When selected, only FakeDNS domain to proxy."))
-o.default = "0"
-o:depends("remote_dns_protocol", "fakedns")
 
 ---- DNS Forward
 o = s:taboption("DNS", Value, "remote_dns", translate("Remote DNS"))
@@ -225,10 +247,14 @@ o:depends("remote_dns_protocol", "doh")
 
 o = s:taboption("DNS", Value, "remote_dns_client_ip", translate("Remote DNS EDNS Client Subnet"))
 o.description = translate("Notify the DNS server when the DNS query is notified, the location of the client (cannot be a private IP address).") .. "<br />" ..
-                translate("This feature requires the DNS server to support the Edns Client Subnet (RFC7871).")
+				translate("This feature requires the DNS server to support the Edns Client Subnet (RFC7871).")
 o.datatype = "ipaddr"
 o:depends("remote_dns_protocol", "tcp")
 o:depends("remote_dns_protocol", "doh")
+
+o = s:taboption("DNS", Flag, "remote_fakedns", "FakeDNS", translate("Use FakeDNS work in the shunt domain that proxy."))
+o.default = "0"
+o.rmempty = false
 
 o = s:taboption("DNS", ListValue, "remote_dns_query_strategy", translate("Remote Query Strategy"))
 o.default = "UseIPv4"
@@ -239,6 +265,13 @@ o:value("UseIPv6")
 hosts = s:taboption("DNS", TextValue, "dns_hosts", translate("Domain Override"))
 hosts.rows = 5
 hosts.wrap = "off"
+
+o = s:taboption("DNS", Button, "clear_ipset", translate("Clear IPSET"), translate("Try this feature if the rule modification does not take effect."))
+o.inputstyle = "remove"
+function o.write(e, e)
+	luci.sys.call("sh /usr/share/" .. appname .. "/iptables.sh flush_ipset > /dev/null 2>&1 &")
+	luci.http.redirect(api.url("log"))
+end
 
 s:tab("log", translate("Log"))
 o = s:taboption("log", Flag, "close_log", translate("Close Node Log"))
@@ -265,13 +298,13 @@ s.anonymous = true
 s.addremove = true
 s.template = "cbi/tblsection"
 function s.create(e, t)
-    TypedSection.create(e, api.gen_uuid())
+	TypedSection.create(e, api.gen_short_uuid())
 end
 
 o = s:option(DummyValue, "status", translate("Status"))
 o.rawhtml = true
 o.cfgvalue = function(t, n)
-    return string.format('<div class="_status" socks_id="%s"></div>', n)
+	return string.format('<div class="_status" socks_id="%s"></div>', n)
 end
 
 ---- Enable
@@ -283,10 +316,10 @@ socks_node = s:option(ListValue, "node", translate("Socks Node"))
 
 local n = 1
 uci:foreach(appname, "socks", function(s)
-    if s[".name"] == section then
-        return false
-    end
-    n = n + 1
+	if s[".name"] == section then
+		return false
+	end
+	n = n + 1
 end)
 
 o = s:option(Value, "port", "Socks " .. translate("Listen Port"))
@@ -295,20 +328,20 @@ o.datatype = "port"
 o.rmempty = false
 
 if has_v2ray or has_xray then
-    o = s:option(Value, "http_port", "HTTP " .. translate("Listen Port") .. " " .. translate("0 is not use"))
-    o.default = 0
-    o.datatype = "port"
+	o = s:option(Value, "http_port", "HTTP " .. translate("Listen Port") .. " " .. translate("0 is not use"))
+	o.default = 0
+	o.datatype = "port"
 end
 
 for k, v in pairs(nodes_table) do
-    node:value(v.id, v["remark"])
-    if v.type == "Socks" then
-        if has_v2ray or has_xray then
-            socks_node:value(v.id, v["remark"])
-        end
-    else
-        socks_node:value(v.id, v["remark"])
-    end
+	node:value(v.id, v["remark"])
+	if v.type == "Socks" then
+		if has_v2ray or has_xray then
+			socks_node:value(v.id, v["remark"])
+		end
+	else
+		socks_node:value(v.id, v["remark"])
+	end
 end
 
 m:append(Template(appname .. "/global/footer"))

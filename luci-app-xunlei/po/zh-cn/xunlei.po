@@ -1,50 +1,60 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8"
-
-msgid "Official website:"
-msgstr "官方网站："
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
 msgid "Xunlei"
-msgstr "Xunlei下载"
+msgstr "迅雷"
 
-msgid "Xunlei is an download tool, made by Xunlei, Inc."
-msgstr "Xunlei 是一个下载工具。"
+msgid "<a>NAS Xunlei DSM 7.x Beta Version</a> | <a href=\"https://github.com/gngpp/xunlei\" target=\"_blank\">Project GitHub URL</a>"
+msgstr "<a>NAS 迅雷 DSM 7.x 内测版</a> | <a href=\"https://github.com/gngpp/xunlei\" target=\"_blank\">GitHub 项目地址</a>"
 
-msgid "Config path"
-msgstr "配置文件路径"
+msgid "Enabled"
+msgstr "启用"
 
-msgid "Download path"
-msgstr "下载路径"
+msgid "RUNNING"
+msgstr "运行中"
+
+msgid "NOT RUNNING"
+msgstr "未运行"
+
+msgid "Collecting data..."
+msgstr "收集数据..."
+
+msgid "Open Web Interface"
+msgstr "打开 Web 界面"
+
+msgid "Host"
+msgstr "监听主机"
 
 msgid "Port"
-msgstr "端口"
+msgstr "监听端口"
 
-msgid "HTTP Port"
-msgstr "HTTP 端口"
+msgid "Username"
+msgstr "用户名"
 
-msgid "Service Status"
-msgstr "服务状态"
+msgid "Password"
+msgstr "密码"
 
-msgid "Xunlei status:"
-msgstr "Xunlei 的状态信息如下："
+msgid "Settings"
+msgstr "设置"
 
-msgid "Setup"
-msgstr "安装配置"
+msgid "Log"
+msgstr "日志"
 
-msgid "The following parameters will only take effect during installation or upgrade:"
-msgstr "以下参数只在安装或者升级时才会生效："
+msgid "Data Storage Path"
+msgstr "数据储存路径"
 
-msgid "Status"
-msgstr "状态"
+msgid "Note: Please keep your user data safe"
+msgstr "注意: 请保管好你的用户数据"
 
-msgid "Xunlei is running"
-msgstr "Xunlei 运行中"
+msgid "Download Storage Path"
+msgstr "下载存储路径"
 
-msgid "Xunlei is not running"
-msgstr "Xunlei 未运行"
+msgid "Download the storage path, which will be mounted on the binding path after startup"
+msgstr "下载存储路径，启动后将挂载到绑定路径"
 
-msgid "Open Xunlei"
-msgstr "打开 Xunlei"
+msgid "Mount Bind Download Path"
+msgstr "挂载绑定路径"
 
-msgid "Not required, all disk is mounted in"
-msgstr "可不填，所有硬盘都在"
+msgid "Mount the binding path, which will be mapped to the download storage path after startup, no special default can be"
+msgstr "挂载绑定路径，启动后将映射到下载存储路径，无特殊默认即可"
+

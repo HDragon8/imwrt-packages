@@ -29,7 +29,7 @@ endef
 define Package/imwrt-default-settings-chn
   $(Package/imwrt-default-settings)
   TITLE+= (Optimize for CHN users)
-  DEPENDS:=+imwrt-default-settings +@LUCI_LANG_zh_Hans
+  DEPENDS:=+imwrt-default-settings +@LUCI_LANG_zh_Hans +luci-i18n-base-zh-cn
 endef
 
 define Build/Prepare

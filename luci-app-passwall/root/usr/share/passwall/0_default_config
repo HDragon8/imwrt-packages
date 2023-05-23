@@ -25,7 +25,7 @@ config global_haproxy
 config global_delay
 	option auto_on '0'
 	option start_daemon '1'
-	option start_delay '1'
+	option start_delay '60'
 
 config global_forwarding
 	option tcp_no_redir_ports 'disable'
@@ -93,7 +93,7 @@ config nodes 'myshunt'
 	option BT '_direct'
 	option Proxy '_default'
 	option Netflix '_default'
-	option openai '_default'
+	option OpenAI '_default'
 	option Direct '_direct'
 	option default_node 'nil'
 	option domainStrategy 'IPOnDemand'
@@ -189,8 +189,8 @@ config shunt_rules 'Netflix'
 	option remarks 'Netflix'
 	option domain_list 'geosite:netflix'
 	
-config shunt_rules 'openai'
-	option remarks 'openai'
+config shunt_rules 'OpenAI'
+	option remarks 'OpenAI'
 	option domain_list 'openai.com'
 
 config shunt_rules 'Direct'

@@ -66,7 +66,7 @@
 			ethinfo    = eth_info,
 			userinfo   = user_info,
 			uptime     = sysinfo.uptime or 0,
-			localtime  = os.date(),
+			localtime  = os.date("%Y年%m月%d日 %a %H:%M:%S"),
 			loadavg    = sysinfo.load or { 0, 0, 0 },
 			memory     = meminfo,
 			memcached  = mem_cached,
@@ -727,20 +727,19 @@
 	<legend><%:System%></legend>
 
 	<table width="100%" cellspacing="10">
-		<tr><td width="33%"><%:Hostname%></td><td><%=luci.sys.hostname() or "?"%></td></tr>
+		<tr><td width="33%"><%:Hostname%></td><td style="color:#6633FF"><%=luci.sys.hostname() or "?"%></td></tr>
 		<tr><td width="33%"><%:Model%></td><td><%=pcdata(boardinfo.model or "?")%> <%=luci.sys.exec("cat /etc/bench.log") or ""%></td></tr>
 		<tr><td width="33%"><%:Architecture%></td><td id="cpuinfo">-</td></tr>
 		<tr><td width="33%"><%:Firmware Version%></td><td>
 			<%=pcdata(ver.distname)%> <%=pcdata(ver.distversion)%> /
 			<%=pcdata(ver.luciname)%> (<%=pcdata(ver.luciversion)%>)
 		</td></tr>
-		<tr><td width="33%"><%:Kernel Version%></td><td><%=luci.sys.exec("uname -r | awk -F '-' '{print $1}'") or "?"%></td></tr>
+		<tr><td width="33%"><%:Kernel Version%></td><td style="color:#CC00FF"><%=luci.sys.exec("uname -r | awk -F '-' '{print $1}'") or "?"%></td></tr>
 		<tr><td width="33%"><%:Local Time%></td><td id="localtime">-</td></tr>
 		<tr><td width="33%"><%:Uptime%></td><td id="uptime">-</td></tr>
 		<tr><td width="33%"><%:Load Average%></td><td id="loadavg">-</td></tr>
-		<tr><td width="33%"><%:CPU usage (%)%></td><td id="cpuusage">-</td></tr>
-		<tr><td width="33%"><%:Compile_noodles %></td><td><%=luci.sys.exec("cat /etc/Compile_noodles") or " "%></td></tr>
-
+		<tr><td width="33%"><%:CPU usage (%)%></td><td style="color:#FF00CC" id="cpuusage">-</td></tr>
+		<tr><td width="33%" style="color:#5e72e4"><%:Compile_noodles %></td><td style="color:orangered"><%=luci.sys.exec("cat /etc/Compile_noodles") or " "%></td></tr>
 	</table>
 </fieldset>
 
