@@ -86,7 +86,7 @@ git clone --depth 1 https://github.com/linkease/istore && mv -n istore/luci/* ./
 git clone --depth 1 https://github.com/linkease/openwrt-app-actions && mv -n openwrt-app-actions/applications/* ./;rm -rf openwrt-app-actions
 git clone --depth 1 https://github.com/ZeaKyX/luci-app-speedtest-web
 git clone --depth 1 https://github.com/ZeaKyX/speedtest-web
-git clone --depth 1 https://github.com/Huangjoe123/luci-app-eqos
+#git clone --depth 1 https://github.com/Huangjoe123/luci-app-eqos
 git clone --depth 1 https://github.com/sirpdboy/luci-app-lucky
 #git clone --depth 1 https://github.com/sirpdboy/luci-app-lucky lucik && mv -n lucik/luci-app-lucky ./ ; rm -rf lucik
 git clone --depth 1 https://github.com/Hyy2001X/AutoBuild-Packages && rm -rf AutoBuild-Packages/luci-app-adguardhome && mvdir AutoBuild-Packages
@@ -142,6 +142,7 @@ svn export https://github.com/sbilly/netmaker-openwrt/trunk/netmaker
 #svn export https://github.com/kiddin9/openwrt-packages/trunk/luci-base
 #svn export https://github.com/kiddin9/openwrt-packages/trunk/luci-mod-status
 #svn export https://github.com/kiddin9/openwrt-packages/trunk/luci-mod-system
+svn export https://github.com/kiddin9/openwrt-packages/luci-app-eqos
 rm -rf luci-app-netdata
 
 #NAS xunlei
