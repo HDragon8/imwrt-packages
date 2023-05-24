@@ -11,7 +11,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=imwrt-default-settings
-PKG_VERSION:=1.1
+PKG_VERSION:=1.2
 PKG_RELEASE:=$(COMMITCOUNT)
 
 PKG_LICENSE:=GPL-3.0
@@ -22,8 +22,8 @@ define Package/imwrt-default-settings
   SECTION:=luci
   CATEGORY:=LuCI
   TITLE:=LuCI support for Default Settings
+  DEPENDS:=+luci
   PKGARCH:=all
-  DEPENDS:=+luci-lib-base +luci
 endef
 
 define Package/imwrt-default-settings-chn
