@@ -2,12 +2,12 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=xunlei
 
-PKG_VERSION:=3.8.0-20
+PKG_VERSION:=3.8.0-23
 
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=gngpp <gngppz@gmail.com>
 
-PKG_SOURCE:=xunlei-launch-$(PKG_VERSION)-$(ARCH)-unknown-linux-musl.tar.gz
+PKG_SOURCE:=xunlei-launcher-$(PKG_VERSION)-$(ARCH)-unknown-linux-musl.tar.gz
 PKG_SOURCE_URL:=https://github.com/gngpp/xunlei/releases/download/v$(PKG_VERSION)/
 PKG_HASH:=skip
 STRIP:=false
@@ -42,7 +42,7 @@ define Build/Prepare
 	rm $(PKG_SOURCE).sha256 $(PKG_SOURCE)
 
 	tar -xvf $(DL_DIR)/$(PKG_SOURCE)
-	mv xunlei-launch-$(PKG_VERSION)-$(ARCH)-unknown-linux-musl/* $(PKG_BUILD_DIR)/
+	mv xunlei-launcher-$(PKG_VERSION)-$(ARCH)-unknown-linux-musl/* $(PKG_BUILD_DIR)/
 endef
 
 define Build/Compile
@@ -68,6 +68,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/share/xunlei
 	$(INSTALL_DIR) $(1)/usr/share/xunlei/target
 	$(INSTALL_DIR) $(1)/usr/share/xunlei/target/host
+	$(INSTALL_DIR) $(1)/usr/share/xunlei/target/etc
 	$(CP) $(PKG_BUILD_DIR)/bin/* $(1)/usr/share/xunlei/target/
 
 	$(INSTALL_DIR) $(1)/etc/init.d

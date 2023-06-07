@@ -6,6 +6,7 @@ PROG=/usr/bin/xunlei
 
 get_config() {
 	config_get_bool enabled $1 enabled 0
+	config_get_bool debug $1 debug 0
 	config_get host $1 host "0.0.0.0"
 	config_get port $1 port 5051
 	config_get auth_user $1 auth_user ''
@@ -42,10 +43,8 @@ start_service() {
 		rm /usr/syno/synoman/webman/modules/authenticate.cgi
 	fi
 
-	if [ -d /var/packages/pan-xunlei-com ]; then
-		mkdir -p /var/packages/pan-xunlei-com
-	fi	
-
+	rm -rf /var/packages/pan-xunlei-com
+	mkdir -p /var/packages/pan-xunlei-com
 	ln -s /usr/share/xunlei/target /var/packages/pan-xunlei-com
 	ln -s /usr/share/xunlei/target/host/etc/synoinfo.conf /etc/synoinfo.conf
 	ln -s /usr/share/xunlei/target/host/usr/syno/synoman/webman/modules/authenticate.cgi /usr/syno/synoman/webman/modules/authenticate.cgi
@@ -54,8 +53,13 @@ start_service() {
 	if [ -n "$auth_user" ] && [ -n "$auth_password" ]; then
 		args="$args -U $auth_user -W $auth_password"
 	fi
+
+	if [ $debug -ne 0 ]; then 
+		args="$args --debug"
+	fi
+	
 	procd_open_instance
-	procd_set_param command /bin/sh -c "$PROG launch $args >>/var/log/xunlei.log 2>&1"
+	procd_set_param command /bin/sh -c "$PROG launcher $args >>/var/log/xunlei.log 2>&1"
 	procd_set_param stdout 0
 	procd_set_param stderr 0
 	procd_set_param pidfile /var/run/xunlei.pid
@@ -68,7 +72,7 @@ service_triggers() {
 
 reload_service() {
 	stop
-	for i in $(seq 1 20); do
+	for i in $(seq 1 60); do
 		if [ -z "$(ps -ef | grep xunlei | grep -v grep | grep -v $$ | grep -v '/etc/rc.common' | grep -v '/sbin/service' | grep -v '/sbin/luci-reload')" ]; then
 			break
 		fi
