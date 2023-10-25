@@ -16,13 +16,14 @@ function mvdir() {
 mv -n `find $1/* -maxdepth 0 -type d` ./
 rm -rf $1
 }
-git clone --depth 1 https://github.com/HDragon8/imwrt-default-settings imwrt-default-settings
+git clone --depth 1 https://github.com/HDragon8/A-default-settings A-default-settings
+#git clone --depth 1 https://github.com/HDragon8/imwrt-default-settings imwrt-default-settings
 git clone --depth 1 https://github.com/kiddin9/luci-theme-edge
 git clone --depth 1 https://github.com/kiddin9/openwrt-amule-dlp && mvdir openwrt-amule-dlp
 git clone --depth 1 https://github.com/yichya/luci-app-xray
-git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall && mvdir openwrt-passwall
+git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall-packages && mvdir openwrt-passwall-packages
 git clone --depth 1 https://github.com/fw876/helloworld && mvdir helloworld
-git clone --depth 1 -b luci https://github.com/xiaorouji/openwrt-passwall passwall1 && mv -n passwall1/luci-app-passwall  ./; rm -rf passwall1
+git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall passwall1 && mv -n passwall1/luci-app-passwall  ./; rm -rf passwall1
 git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall2 passwall2 && mv -n passwall2/luci-app-passwall2 ./;rm -rf passwall2
 git clone --depth 1 https://github.com/Lienol/openwrt-package
 git clone --depth 1 https://github.com/messense/aliyundrive-webdav aliyundrive && mv -n aliyundrive/openwrt/* ./ ; rm -rf aliyundrive
@@ -205,6 +206,8 @@ rm -rf luci-app-wifischedule/po/zh_Hans
 cp -Rf luci-app-wifischedule/po/zh-cn luci-app-wifischedule/po/zh_Hans
 rm -rf luci-app-minidlna/po/zh_Hans
 cp -Rf luci-app-minidlna/po/zh-cn luci-app-minidlna/po/zh_Hans
+rm -rf luci-app-xunlei/po/zh_Hans
+cp -Rf luci-app-xunlei/po/zh-cn luci-app-xunlei/po/zh_Hans
 
 #bash diy/create_acl_for_luci.sh -a >/dev/null 2>&1
 #bash diy/convert_translation.sh -a >/dev/null 2>&1
