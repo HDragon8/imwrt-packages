@@ -35,8 +35,14 @@ if [ ! -z "$UPDATE_CONFIG_FILE" ]; then
 fi
 
 if [ -z "$CONFIG_FILE" ]; then
-	CONFIG_FILE="/etc/openclash/config/$(ls -lt /etc/openclash/config/ | grep -E '.yaml|.yml' | head -n 1 |awk '{print $9}')"
-	CONFIG_NAME=$(echo "$CONFIG_FILE" |awk -F '/' '{print $5}' 2>/dev/null)
+  for file_name in /etc/openclash/config/*
+   do
+      if [ -f "$file_name" ]; then
+         CONFIG_FILE=$file_name
+         CONFIG_NAME=$(echo "$CONFIG_FILE" |awk -F '/' '{print $5}' 2>/dev/null)
+         break
+      fi
+   done
 fi
 
 if [ -z "$CONFIG_NAME" ]; then
@@ -295,7 +301,8 @@ yml_servers_set()
    config_get "multiplex_padding" "$section" "multiplex_padding" ""
    config_get "multiplex_statistic" "$section" "multiplex_statistic" ""
    config_get "multiplex_only_tcp" "$section" "multiplex_only_tcp" ""
-   
+   config_get "other_parameters" "$section" "other_parameters" ""
+
    if [ "$enabled" = "0" ]; then
       return
    fi
@@ -1265,6 +1272,11 @@ cat >> "$SERVER_FILE" <<-EOF
     routing-mark: "$routing_mark"
 EOF
    fi
+
+#other_parameters
+   if [ -n "$other_parameters" ]; then
+      echo -e "$other_parameters" >> "$SERVER_FILE"
+   fi
 }
 
 new_servers_group_set()
@@ -1493,7 +1505,7 @@ cat >> "$SERVER_FILE" <<-EOF
       - Proxy
 EOF
 cat >> "$SERVER_FILE" <<-EOF
-  - name: ChatGPT
+  - name: OpenAI
     type: select
     proxies:
       - Proxy
@@ -1732,12 +1744,40 @@ EOF
 fi
 cat /tmp/Proxy_Provider >> $SERVER_FILE 2>/dev/null
 cat >> "$SERVER_FILE" <<-EOF
+  - name: miHoYo
+    type: select
+    proxies:
+      - DIRECT
+      - Proxy
+EOF
+cat /tmp/Proxy_Server >> $SERVER_FILE 2>/dev/null
+if [ -f "/tmp/Proxy_Provider" ]; then
+cat >> "$SERVER_FILE" <<-EOF
+    use:
+EOF
+fi
+cat /tmp/Proxy_Provider >> $SERVER_FILE 2>/dev/null
+cat >> "$SERVER_FILE" <<-EOF
   - name: AdBlock
     type: select
     proxies:
       - REJECT
       - DIRECT
       - Proxy
+  - name: Anti IP
+    type: select
+    proxies:
+      - DIRECT
+      - Proxy
+EOF
+cat /tmp/Proxy_Server >> $SERVER_FILE 2>/dev/null
+if [ -f "/tmp/Proxy_Provider" ]; then
+cat >> "$SERVER_FILE" <<-EOF
+    use:
+EOF
+fi
+cat /tmp/Proxy_Provider >> $SERVER_FILE 2>/dev/null
+cat >> "$SERVER_FILE" <<-EOF
   - name: Asian TV
     type: select
     proxies:
@@ -1857,14 +1897,16 @@ ${uci_set}AppleTV="Apple TV"
 ${uci_set}GoogleFCM="Google FCM"
 ${uci_set}Scholar="Scholar"
 ${uci_set}Microsoft="Microsoft"
-${uci_set}ChatGPT="ChatGPT"
+${uci_set}OpenAI="OpenAI"
 ${uci_set}Netflix="Netflix"
 ${uci_set}Discovery="Discovery Plus"
 ${uci_set}DAZN="DAZN"
 ${uci_set}Disney="Disney"
 ${uci_set}Spotify="Spotify"
 ${uci_set}Steam="Steam"
+${uci_set}miHoYo="miHoYo"
 ${uci_set}AdBlock="AdBlock"
+${uci_set}AntiIP="Anti IP"
 ${uci_set}Speedtest="Speedtest"
 ${uci_set}Telegram="Telegram"
 ${uci_set}Crypto="Crypto"
@@ -1889,18 +1931,20 @@ ${uci_set}Others="Others"
 	${UCI_DEL_LIST}="Netflix" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Netflix" >/dev/null 2>&1
 	${UCI_DEL_LIST}="Discovery Plus" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Discovery Plus" >/dev/null 2>&1
 	${UCI_DEL_LIST}="DAZN" >/dev/null 2>&1 && ${UCI_ADD_LIST}="DAZN" >/dev/null 2>&1
-  ${UCI_DEL_LIST}="ChatGPT" >/dev/null 2>&1 && ${UCI_ADD_LIST}="ChatGPT" >/dev/null 2>&1
+  ${UCI_DEL_LIST}="OpenAI" >/dev/null 2>&1 && ${UCI_ADD_LIST}="OpenAI" >/dev/null 2>&1
   ${UCI_DEL_LIST}="Apple TV" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Apple TV" >/dev/null 2>&1
 	${UCI_DEL_LIST}="Google FCM" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Google FCM" >/dev/null 2>&1
 	${UCI_DEL_LIST}="Scholar" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Scholar" >/dev/null 2>&1
 	${UCI_DEL_LIST}="Disney" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Disney" >/dev/null 2>&1
 	${UCI_DEL_LIST}="Spotify" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Spotify" >/dev/null 2>&1
 	${UCI_DEL_LIST}="Steam" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Steam" >/dev/null 2>&1
+  ${UCI_DEL_LIST}="miHoYo" >/dev/null 2>&1 && ${UCI_ADD_LIST}="miHoYo" >/dev/null 2>&1
 	${UCI_DEL_LIST}="Telegram" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Telegram" >/dev/null 2>&1
   ${UCI_DEL_LIST}="Crypto" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Crypto" >/dev/null 2>&1
   ${UCI_DEL_LIST}="Discord" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Discord" >/dev/null 2>&1
 	${UCI_DEL_LIST}="PayPal" >/dev/null 2>&1 && ${UCI_ADD_LIST}="PayPal" >/dev/null 2>&1
 	${UCI_DEL_LIST}="Speedtest" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Speedtest" >/dev/null 2>&1
+  ${UCI_DEL_LIST}="Anti IP" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Anti IP" >/dev/null 2>&1
   ${UCI_DEL_LIST}="Others" >/dev/null 2>&1 && ${UCI_ADD_LIST}="Others" >/dev/null 2>&1
 }
 elif [ "$rule_sources" = "ConnersHua_return" ] && [ "$servers_if_update" != "1" ] && [ -z "$if_game_proxy" ]; then

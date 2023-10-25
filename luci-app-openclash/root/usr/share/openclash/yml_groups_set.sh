@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 . /lib/functions.sh
 . /usr/share/openclash/log.sh
 
@@ -27,8 +27,14 @@ if [ -n "$UPDATE_CONFIG_FILE" ]; then
 fi
 
 if [ -z "$CONFIG_FILE" ]; then
-   CONFIG_FILE="/etc/openclash/config/$(ls -lt /etc/openclash/config/ | grep -E '.yaml|.yml' | head -n 1 |awk '{print $9}')"
-   CONFIG_NAME=$(echo "$CONFIG_FILE" |awk -F '/' '{print $5}' 2>/dev/null)
+   for file_name in /etc/openclash/config/*
+   do
+      if [ -f "$file_name" ]; then
+         CONFIG_FILE=$file_name
+         CONFIG_NAME=$(echo "$CONFIG_FILE" |awk -F '/' '{print $5}' 2>/dev/null)
+         break
+      fi
+   done
 fi
 
 if [ -z "$CONFIG_NAME" ]; then
@@ -46,7 +52,7 @@ set_groups()
       return
    fi
 
-   if [ "$1" = "$3" ] || [ "$1" = "all" ]; then
+   if [ "$1" = "all" ] || [[ "$3" =~ ${1} ]]; then
       set_group=1
       add_for_this=1
       echo "      - \"${2}\"" >>$GROUP_FILE
@@ -70,7 +76,7 @@ set_relay_groups()
    fi
 
    if [ -n "$server_relay_num" ]; then
-      if [ "$server_group_name" = "$3" ] || [ "$server_group_name" = "all" ]; then
+      if [[ "$3" =~ ${server_group_name} ]] || [ "$server_group_name" = "all" ]; then
          set_group=1
          add_for_this=1
          echo "$server_relay_num #      - \"${2}\"" >>/tmp/relay_server
@@ -109,14 +115,50 @@ yml_servers_add()
    
 }
 
+add_other_group()
+{
+   local section="$1"
+   local name enabled config
+   config_get_bool "enabled" "$section" "enabled" "1"
+   config_get "config" "$section" "config" ""
+   config_get "name" "$section" "name" ""
+
+   if [ "$enabled" = "0" ]; then
+      return
+   fi
+
+   if [ -n "$config" ] && [ "$config" != "$CONFIG_NAME" ] && [ "$config" != "all" ]; then
+      return
+   fi
+   
+   if [ -z "$name" ]; then
+      return
+   fi
+
+   if [ "$3" = "$name" ]; then
+      return
+   fi
+
+   if [ "$2" = "all" ] || [[ "$name" =~ ${2} ]]; then
+      set_group=1
+      echo "      - ${name}" >>$GROUP_FILE
+   fi
+}
+
 #加入其它策略组
 set_other_groups()
 {
    if [ -z "$1" ]; then
       return
    fi
-   set_group=1
-   echo "      - ${1}" >>$GROUP_FILE
+
+   if [ "$1" = "DIRECT" ] || [ "$1" = "REJECT" ]; then
+      set_group=1
+      echo "      - ${1}" >>$GROUP_FILE
+      return
+   fi
+
+   config_foreach add_other_group "groups" "$1" "$2" #比对策略组
 }
 
 #加入代理集
@@ -155,7 +197,7 @@ set_provider_groups()
       return
    fi
 
-   if [ "$1" = "$3" ] || [ "$1" = "all" ]; then
+   if [[ "$3" =~ ${1} ]] || [ "$1" = "all" ]; then
       set_proxy_provider=1
       add_for_this=1
       echo "      - ${2}" >>$GROUP_FILE
@@ -240,7 +282,7 @@ yml_groups_set()
    set_group=0
    set_proxy_provider=0
    
-   config_list_foreach "$section" "other_group" set_other_groups #加入其他策略组
+   config_list_foreach "$section" "other_group" set_other_groups "$name" #加入其他策略组
    config_foreach yml_servers_add "servers" "$name" "$type" #加入服务器节点
    
    if [ "$type" = "relay" ] && [ -s "/tmp/relay_server" ]; then

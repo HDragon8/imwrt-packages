@@ -76,12 +76,13 @@ start_service() {
 	local update_time
 	config_get update_time "config" "update_time" "3"
 	sed -i "/$NAME/d" /etc/crontabs/root
-	is_enabled "config" "auto_update" && echo "0 ${update_time} * * * $UNM_DIR/update.sh update_core" >> "/etc/crontabs/root"
+	echo -e "30 2 * * * /etc/init.d/unblockneteasemusic" >> "/etc/crontabs/root"
+	! is_enabled "config" "auto_update" || echo -e "0 ${update_time} * * * $UNM_DIR/update.sh update_core" >> "/etc/crontabs/root"
 	/etc/init.d/cron restart
 
 	mkdir -p "$RUN_DIR"
-	[ ! -s "$UNM_DIR/core/app.js" ] && { rm -f "$UNM_DIR/local_ver"; sh "$UNM_DIR/update.sh" "update_core_non_restart"; }
-	[ ! -s "$UNM_DIR/core/app.js" ] && { echo "Core Not Found, please download it before starting." >> "$RUN_DIR/run.log"; return 1; }
+	[ -s "$UNM_DIR/core/app.js" ] || { rm -f "$UNM_DIR/local_ver"; sh "$UNM_DIR/update.sh" "update_core_non_restart"; }
+	[ -s "$UNM_DIR/core/app.js" ] || { echo "Core Not Found, please download it before starting." >> "$RUN_DIR/run.log"; return 1; }
 
 	procd_open_instance "$NAME"
 	procd_set_param command node "$UNM_DIR/core/app.js"
@@ -105,7 +106,8 @@ start_service() {
 
 	local music_source
 	config_get music_source "config" "music_source" "default"
-	[ "${music_source}" != "default" ] && append_param -o "${music_source}"
+	[ "$music_source" != "default" ] || music_source="kugou kuwo migu pyncmd"
+	append_param -o "$music_source"
 
 	append_param_arg "config" "cnrelay" "-c"
 	append_param_arg "config" "endpoint_url" "-e" "https://music.163.com"
@@ -119,6 +121,7 @@ start_service() {
 	procd_append_param env LOG_LEVEL="$log_level"
 
 	append_param_env "config" "joox_cookie" "JOOX_COOKIE"
+	append_param_env "config" "kuwo_cookie" "KUWO_COOKIE"
 	append_param_env "config" "migu_cookie" "MIGU_COOKIE"
 	append_param_env "config" "qq_cookie" "QQ_COOKIE"
 	append_param_env "config" "youtube_key" "YOUTUBE_KEY"

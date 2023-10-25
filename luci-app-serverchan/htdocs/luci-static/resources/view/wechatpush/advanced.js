@@ -21,20 +21,28 @@ return view.extend({
 		s.addremove = false
 
 		o = s.option(form.Value, 'up_timeout', _('Device online detection timeout (s)'));
-		o.default = "2"
+		o.placeholder = "2"
 		o.optional = false
 		o.datatype = "uinteger"
+		o.rmempty = false;
 
 		o = s.option(form.Value, "down_timeout", _('Device offline detection timeout (s)'))
-		o.default = "20"
+		o.placeholder = "10"
 		o.optional = false
 		o.datatype = "uinteger"
+		o.rmempty = false;
 
 		o = s.option(form.Value, "timeout_retry_count", _('Offline detection count'))
-		o.default = "2"
+		o.placeholder = "2"
 		o.optional = false
 		o.datatype = "uinteger"
+		o.rmempty = false;
 		o.description = _("If the device has good signal strength and no Wi-Fi sleep issues, you can reduce the above values.<br/>Due to the mysterious nature of Wi-Fi sleep during the night, if you encounter frequent disconnections, please adjust the parameters accordingly.<br/>..╮(╯_╰）╭..")
+
+		o = s.option(form.Flag, "only_timeout_push", _("Offline timeout applies only to the devices that receive push notifications"))
+		o.default = 0
+		o.rmempty = true
+		o.description = _("When this option is selected, the offline timeout and offline detection count apply only to the devices that require push notifications. Other devices will use default values, which can significantly reduce the time required for detection. However, it may result in inaccurate online time displayed in the online devices list. It is recommended to enable this option only when there are many devices and frequent offline occurrences are observed for specific devices of interest.")
 
 		o = s.option(form.Flag, "passive_mode", _("Disable active detection"))
 		o.default = 0
@@ -42,8 +50,9 @@ return view.extend({
 		o.description = _("Disable active detection of client online status. Enabling this feature will no longer prompt device online/offline events.<br/>Suitable for users who are not sensitive to online devices but need other features.")
 
 		o = s.option(form.Value, "thread_num", _('Maximum concurrent processes'))
-		o.default = "3"
+		o.placeholder = "3"
 		o.datatype = "uinteger"
+		o.rmempty = false;
 		o.description = _("Do not change the setting value for low-performance devices, or reduce the parameters as appropriate.")
 
 		o = s.option(form.Value, "soc_code", _('Custom temperature reading command'))
@@ -60,7 +69,7 @@ return view.extend({
 		o = s.option(form.Value, "server_port", _("Host machine SSH port"))
 		o.rmempty = true
 		o.default = "22"
-		o.description = _('The default SSH port is 22. If you have a custom port, please fill in the custom SSH port.<br/>Please make sure you have set up key-based login, otherwise it may cause script errors.<br/>Install the sensors command on PVE by searching on the internet.<br/>Example for key-based login (modify the address and port number accordingly):<br/>opkg update # Update package list<br/>opkg install openssh-client openssh-keygen # Install openssh client<br/>echo -e \"\\n\" | ssh-keygen -t rsa # Generate key file (no passphrase)<br/>pve_host=`uci get wechatpush.config.server_host` || pve_host=\"10.0.0.3\" # Read the PVE host address from the configuration file, If not saved, please fill in by yourself.<br/>pve_port=`uci get wechatpush.config.server_port` || pve_host=\"22\" # Read the PVE host SSH port number from the configuration file, If not saved, please fill in by yourself.<br/>ssh root@${pve_host} -p ${pve_port} \"tee -a ~/.ssh/id_rso.pub\" < ~/.ssh/id_rso.pub # Transfer public key to PVE<br/>ssh root@${pve_host} -p ${pve_port} \"cat ~/.ssh/id_rso.pub >> ~/.ssh/authorized_keys\" # Write public key to PVE<br/>ssh -i /root/.ssh/id_rsa root@${pve_host} -p ${pve_port} sensors # To avoid script errors during the initial connection, please use a private key to connect to PVE and test the temperature command for its proper functioning.<br/>For users who frequently flash firmware, please add /root/.ssh/ to the backup list to avoid duplicate operations.');
+		o.description = _('The default SSH port is 22. If you have a custom port, please fill in the custom SSH port.<br/>Please make sure you have set up key-based login, otherwise it may cause script errors.<br/>Install the sensors command on PVE by searching on the internet.<br/>Example for key-based login (modify the address and port number accordingly):<br/>opkg update # Update package list<br/>opkg install openssh-client openssh-keygen # Install openssh client<br/>echo -e \"\\n\" | ssh-keygen -t rsa # Generate key file (no passphrase)<br/>pve_host=`uci get wechatpush.config.server_host` || pve_host=\"10.0.0.3\" # Read the PVE host address from the configuration file, If not saved, please fill in by yourself.<br/>pve_port=`uci get wechatpush.config.server_port` || pve_host=\"22\" # Read the PVE host SSH port number from the configuration file, If not saved, please fill in by yourself.<br/>ssh -o StrictHostKeyChecking=yes root@${pve_host} -p ${pve_port} \"tee -a ~/.ssh/OpenWrt_id_rsa.pub\" < ~/.ssh/id_rsa.pub # Transfer public key to PVE<br/>ssh root@${pve_host} -p ${pve_port} \"cat ~/.ssh/OpenWrt_id_rsa.pub >> ~/.ssh/authorized_keys\" # Write public key to PVE<br/>ssh -i /root/.ssh/id_rsa root@${pve_host} -p ${pve_port} sensors # To avoid script errors during the initial connection, please use a private key to connect to PVE and test the temperature command for its proper functioning.<br/>For users who frequently flash firmware, please add /root/.ssh/ to the backup list to avoid duplicate operations.');
 		o.depends('soc_code', 'pve');
 
 		o = s.option(form.Button, '_soc', _('Test temperature command'), _('You may need to save the configuration before sending.'));
@@ -162,7 +171,7 @@ return view.extend({
 		o.value("", _("No operation"))
 		o.value("1", _("Restart the router"))
 		o.value("2", _("Redialing network"))
-		o.description = _("Option 1 and Option 2 will not modify settings and will try a maximum of 2 times.<br/>【!!This feature cannot guarantee compatibility!!】")
+		o.description = _("The restart operation will occur ten minutes after the network disconnection and will be attempted a maximum of two times. If the option to log in to the optical modem is available, this operation will attempt to restart the optical modem.<br/>【!!This feature cannot guarantee compatibility!!】")
 		o.depends('unattended_enable', '1');
 
 		o = s.option(form.ListValue, "unattended_autoreboot_mode", _("Scheduled reboot"))

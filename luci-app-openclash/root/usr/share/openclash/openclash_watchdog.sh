@@ -47,7 +47,8 @@ check_dnsmasq() {
                      nft delete rule inet fw4 ${nft} handle ${handle}
                   done
                done >/dev/null 2>&1
-               position=$(nft list chain inet fw4 dstnat |grep "OpenClash" |grep "DNS" |awk -F '# handle ' '{print$2}' |sort -rn |head -1 || ehco 0)
+               local position=$(nft -a list chain inet fw4 dstnat |grep "OpenClash" |grep "DNS" |awk -F '# handle ' '{print$2}' |sort -rn |head -1)
+               [ -z "$position" ] && position=0
                nft add rule inet fw4 dstnat position "$position" tcp dport 53 redirect to "$DNSPORT" comment \"OpenClash DNS Hijack\" 2>/dev/null
                nft add rule inet fw4 dstnat position "$position" udp dport 53 redirect to "$DNSPORT" comment \"OpenClash DNS Hijack\" 2>/dev/null
                if [ "$ipv6_enable" -eq 1 ]; then
@@ -66,12 +67,14 @@ check_dnsmasq() {
                      done
                   fi
                done >/dev/null 2>&1
-               position=$(iptables -nvL PREROUTING -t nat |sed 1,2d |grep "OpenClash" |sed -n "/DNS/=" 2>/dev/null |sort -rn |head -1 || ehco 0)
+               local position=$(iptables -nvL PREROUTING -t nat |sed 1,2d |grep "OpenClash" |sed -n "/DNS/=" 2>/dev/null |sort -rn |head -1)
+               [ -z "$position" ] && position=0
                [ "$position" -ne 0 ] && let position++
                iptables -t nat -I PREROUTING "$position" -p udp --dport 53 -j REDIRECT --to-ports "$DNSPORT" -m comment --comment "OpenClash DNS Hijack" 2>/dev/null
                iptables -t nat -I PREROUTING "$position" -p tcp --dport 53 -j REDIRECT --to-ports "$DNSPORT" -m comment --comment "OpenClash DNS Hijack" 2>/dev/null
                if [ "$ipv6_enable" -eq 1 ]; then
-                  position=$(ip6tables -nvL PREROUTING -t nat |sed 1,2d |grep "OpenClash" |sed -n "/DNS/=" 2>/dev/null |sort -rn |head -1 || ehco 0)
+                  position=$(ip6tables -nvL PREROUTING -t nat |sed 1,2d |grep "OpenClash" |sed -n "/DNS/=" 2>/dev/null |sort -rn |head -1)
+                  [ -z "$position" ] && position=0
                   [ "$position" -ne 0 ] && let position++
                   ip6tables -t nat -I PREROUTING "$position" -p udp --dport 53 -j REDIRECT --to-ports "$DNSPORT" -m comment --comment "OpenClash DNS Hijack" 2>/dev/null
                   ip6tables -t nat -I PREROUTING "$position" -p tcp --dport 53 -j REDIRECT --to-ports "$DNSPORT" -m comment --comment "OpenClash DNS Hijack" 2>/dev/null
@@ -107,7 +110,7 @@ do
    stream_auto_select_discovery_plus=$(uci -q get openclash.config.stream_auto_select_discovery_plus || echo 0)
    stream_auto_select_bilibili=$(uci -q get openclash.config.stream_auto_select_bilibili || echo 0)
    stream_auto_select_google_not_cn=$(uci -q get openclash.config.stream_auto_select_google_not_cn || echo 0)
-   stream_auto_select_chatgpt=$(uci -q get openclash.config.stream_auto_select_chatgpt || echo 0)
+   stream_auto_select_openai=$(uci -q get openclash.config.stream_auto_select_openai || echo 0)
    upnp_lease_file=$(uci -q get upnpd.config.upnp_lease_file)
    
    enable=$(uci -q get openclash.config.enable)
@@ -139,7 +142,7 @@ if [ "$enable" -eq 1 ]; then
 	      if [ "$core_type" == "TUN" ] || [ "$core_type" == "Meta" ]; then
 	         ip route replace default dev utun table "$PROXY_ROUTE_TABLE" 2>/dev/null
 	         ip rule add fwmark "$PROXY_FWMARK" table "$PROXY_ROUTE_TABLE" 2>/dev/null
-            if [ "$ipv6_mode" -eq 2 ] && [ "$ipv6_enable" -eq 1 ]; then
+            if [ "$ipv6_mode" -eq 2 ] && [ "$ipv6_enable" -eq 1 ] && [ "$core_type" == "Meta" ]; then
                ip -6 rule del oif utun table 2022 >/dev/null 2>&1
                ip -6 route del default dev utun table 2022 >/dev/null 2>&1
                ip -6 route replace default dev utun table "$PROXY_ROUTE_TABLE" >/dev/null 2>&1
@@ -352,9 +355,9 @@ fi
                LOG_OUT "Tip: Start Auto Select Proxy For Bilibili Unlock..."
                /usr/share/openclash/openclash_streaming_unlock.lua "Bilibili" >> $LOG_FILE
             fi
-            if [ "$stream_auto_select_chatgpt" -eq 1 ]; then
-               LOG_OUT "Tip: Start Auto Select Proxy For ChatGPT Unlock..."
-               /usr/share/openclash/openclash_streaming_unlock.lua "ChatGPT" >> $LOG_FILE
+            if [ "$stream_auto_select_openai" -eq 1 ]; then
+               LOG_OUT "Tip: Start Auto Select Proxy For OpenAI Unlock..."
+               /usr/share/openclash/openclash_streaming_unlock.lua "OpenAI" >> $LOG_FILE
             fi
          fi
       fi

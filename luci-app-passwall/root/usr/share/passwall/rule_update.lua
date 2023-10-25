@@ -32,7 +32,8 @@ local chnroute6_url =  ucic:get(name, "@global_rules[0]", "chnroute6_url") or {"
 local chnlist_url = ucic:get(name, "@global_rules[0]", "chnlist_url") or {"https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf","https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/apple.china.conf","https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/google.china.conf"}
 local geoip_api =  "https://api.github.com/repos/Loyalsoldier/v2ray-rules-dat/releases/latest"
 local geosite_api =  "https://api.github.com/repos/Loyalsoldier/v2ray-rules-dat/releases/latest"
-local v2ray_asset_location = ucic:get_first(name, 'global_rules', "v2ray_location_asset", "/usr/share/v2ray/")
+local asset_location = ucic:get_first(name, 'global_rules', "v2ray_location_asset", "/usr/share/v2ray/")
+local use_nft = ucic:get(name, "@global_forwarding[0]", "use_nft") or "0"
 
 local log = function(...)
 	if arg1 then
@@ -43,6 +44,34 @@ local log = function(...)
 			print(result)
 		end
 	end
+end
+
+local function gen_nftset(set_name, ip_type, tmp_file, input_file)
+	f = io.open(input_file, "r")
+	local element = f:read("*all")
+	f:close()
+
+	nft_file, err = io.open(tmp_file, "w")
+	nft_file:write('#!/usr/sbin/nft -f\n')
+	nft_file:write(string.format('define %s = {%s}\n', set_name, string.gsub(element, "%s*%c+", " timeout 3650d, ")))
+	if luci.sys.call(string.format('nft "list set inet fw4 %s" >/dev/null 2>&1', set_name)) ~= 0 then
+		nft_file:write(string.format('add set inet fw4 %s { type %s; flags interval, timeout; timeout 2d; gc-interval 2d; auto-merge; }\n', set_name, ip_type))
+	end
+	nft_file:write(string.format('add element inet fw4 %s $%s\n', set_name, set_name))
+	nft_file:close()
+	luci.sys.call(string.format('nft -f %s &>/dev/null',tmp_file))
+	os.remove(tmp_file)
+end
+
+--gen cache for nftset from file
+local function gen_cache(set_name, ip_type, input_file, output_file)
+	local tmp_dir = "/tmp/"
+	local tmp_file = output_file .. "_tmp"
+	local tmp_set_name = set_name .. "_tmp"
+	gen_nftset(tmp_set_name, ip_type, tmp_file, input_file)
+	luci.sys.call("nft list set inet fw4 " ..tmp_set_name.. " | sed 's/" ..tmp_set_name.. "/" ..set_name.. "/g' | cat > " ..output_file)
+	luci.sys.call("nft flush set inet fw4 " ..tmp_set_name)
+	luci.sys.call("nft delete set inet fw4 " ..tmp_set_name)
 end
 
 -- curl
@@ -198,6 +227,17 @@ local function fetch_rule(rule_name,rule_type,url,exclude_domain)
 		local new_md5 = luci.sys.exec("echo -n $([ -f '" ..file_tmp.. "' ] && md5sum " ..file_tmp.." | awk '{print $1}')")
 		if old_md5 ~= new_md5 then
 			local count = line_count(file_tmp)
+			if use_nft == "1" and (rule_type == "ip6" or rule_type == "ip4") then
+				local set_name = "passwall_" ..rule_name
+				local output_file = file_tmp.. ".nft"
+				if rule_type == "ip4" then
+					gen_cache(set_name, "ipv4_addr", file_tmp, output_file)
+				elseif rule_type == "ip6" then
+					gen_cache(set_name, "ipv6_addr", file_tmp, output_file)
+				end
+				luci.sys.exec(string.format('mv -f %s %s', output_file, rule_path .. "/" ..rule_name.. ".nft"))
+				os.remove(output_file)
+			end
 			luci.sys.exec("mv -f "..file_tmp .. " " ..rule_path .. "/" ..rule_name)
 			reboot = 1
 			log(rule_name.. " 更新成功，总规则数 " ..count.. " 条。")
@@ -245,8 +285,8 @@ local function fetch_geoip()
 						f:write(content:gsub("geoip.dat", "/tmp/geoip.dat"), "")
 						f:close()
 
-						if nixio.fs.access(v2ray_asset_location .. "geoip.dat") then
-							luci.sys.call(string.format("cp -f %s %s", v2ray_asset_location .. "geoip.dat", "/tmp/geoip.dat"))
+						if nixio.fs.access(asset_location .. "geoip.dat") then
+							luci.sys.call(string.format("cp -f %s %s", asset_location .. "geoip.dat", "/tmp/geoip.dat"))
 							if luci.sys.call('sha256sum -c /tmp/geoip.dat.sha256sum > /dev/null 2>&1') == 0 then
 								log("geoip 版本一致，无需更新。")
 								return 1
@@ -256,7 +296,7 @@ local function fetch_geoip()
 							if v2.name and v2.name == "geoip.dat" then
 								sret = curl(v2.browser_download_url, "/tmp/geoip.dat")
 								if luci.sys.call('sha256sum -c /tmp/geoip.dat.sha256sum > /dev/null 2>&1') == 0 then
-									luci.sys.call(string.format("mkdir -p %s && cp -f %s %s", v2ray_asset_location, "/tmp/geoip.dat", v2ray_asset_location .. "geoip.dat"))
+									luci.sys.call(string.format("mkdir -p %s && cp -f %s %s", asset_location, "/tmp/geoip.dat", asset_location .. "geoip.dat"))
 									reboot = 1
 									log("geoip 更新成功。")
 									return 1
@@ -296,8 +336,8 @@ local function fetch_geosite()
 						f:write(content:gsub("geosite.dat", "/tmp/geosite.dat"), "")
 						f:close()
 
-						if nixio.fs.access(v2ray_asset_location .. "geosite.dat") then
-							luci.sys.call(string.format("cp -f %s %s", v2ray_asset_location .. "geosite.dat", "/tmp/geosite.dat"))
+						if nixio.fs.access(asset_location .. "geosite.dat") then
+							luci.sys.call(string.format("cp -f %s %s", asset_location .. "geosite.dat", "/tmp/geosite.dat"))
 							if luci.sys.call('sha256sum -c /tmp/geosite.dat.sha256sum > /dev/null 2>&1') == 0 then
 								log("geosite 版本一致，无需更新。")
 								return 1
@@ -307,7 +347,7 @@ local function fetch_geosite()
 							if v2.name and v2.name == "geosite.dat" then
 								sret = curl(v2.browser_download_url, "/tmp/geosite.dat")
 								if luci.sys.call('sha256sum -c /tmp/geosite.dat.sha256sum > /dev/null 2>&1') == 0 then
-									luci.sys.call(string.format("mkdir -p %s && cp -f %s %s", v2ray_asset_location, "/tmp/geosite.dat", v2ray_asset_location .. "geosite.dat"))
+									luci.sys.call(string.format("mkdir -p %s && cp -f %s %s", asset_location, "/tmp/geosite.dat", asset_location .. "geosite.dat"))
 									reboot = 1
 									log("geosite 更新成功。")
 									return 1
@@ -420,6 +460,10 @@ luci.sys.call("uci commit " .. name)
 
 if reboot == 1 then
 	log("重启服务，应用新的规则。")
-	luci.sys.call("/usr/share/" .. name .. "/iptables.sh flush_ipset > /dev/null 2>&1 &")
+	if use_nft == "1" then
+		luci.sys.call("sh /usr/share/" .. name .. "/nftables.sh flush_nftset > /dev/null 2>&1 &")
+	else
+		luci.sys.call("sh /usr/share/" .. name .. "/iptables.sh flush_ipset > /dev/null 2>&1 &")
+	end
 end
 log("规则更新完毕...")

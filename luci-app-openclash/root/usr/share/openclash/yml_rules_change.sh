@@ -370,7 +370,7 @@ yml_other_set()
    
    begin
    Thread.new{
-      if $6 == 0 and ${10} != 2 then
+      if $6 == 0 and ${11} != 2 and '${13}' == 'fake-ip' then
          if Value.has_key?('rules') and not Value['rules'].to_a.empty? then
             if Value['rules'].to_a.grep(/(?=.*SRC-IP-CIDR,'${fake_ip}')/).empty? then
                Value['rules']=Value['rules'].to_a.insert(0,'SRC-IP-CIDR,${12},DIRECT');
@@ -559,7 +559,7 @@ yml_other_set()
                if defined? Value_2 then
                   Value_2.each{|x|
                      if ${10} != 1 then
-                        if x =~ /(^GEOSITE,|^AND,|^OR,|^NOT,|^IP-SUFFIX,|^SRC-IP-SUFFIX,|^IN-TYPE,|^SUB-RULE,|PORT,[0-9]+\/+|PORT,[0-9]+-+)/ or x.split(',')[-1] == 'tcp' or x.split(',')[-1] == 'udp' then
+                        if x =~ /(^GEOSITE,|^AND,|^OR,|^NOT,|^IP-SUFFIX,|^SRC-IP-SUFFIX,|^IN-TYPE,|^IN-USER,|^IN-NAME,|^NETWORK,|^UID,|^SUB-RULE,|PORT,[0-9]+\/+|PORT,[0-9]+-+)/ or x.split(',')[-1] == 'tcp' or x.split(',')[-1] == 'udp' then
                            puts '${LOGTIME} Warning: Skip the Custom Rule that Core not Support【' + x + '】'
                            next
                         end;
@@ -937,8 +937,10 @@ yml_other_rules_get()
    config_get "GoogleFCM" "$section" "GoogleFCM" "DIRECT"
    config_get "Discovery" "$section" "Discovery" "$GlobalTV"
    config_get "DAZN" "$section" "DAZN" "$GlobalTV"
-   config_get "ChatGPT" "$section" "ChatGPT" "$Proxy"
+   config_get "OpenAI" "$section" "OpenAI" "$Proxy"
    config_get "AppleTV" "$section" "AppleTV" "$GlobalTV"
+   config_get "miHoYo" "$section" "miHoYo" "$Domestic"
+   config_get "AntiIP" "$section" "AntiIP" "$Domestic"
 }
 
 if [ "$1" != "0" ]; then
@@ -950,14 +952,14 @@ if [ "$1" != "0" ]; then
    config_load "openclash"
    config_foreach yml_other_rules_get "other_rules" "$5"
    if [ -z "$rule_name" ]; then
-      yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}"
+      yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}"
       exit 0
    #判断策略组是否存在
    elif [ "$rule_name" = "ConnersHua_return" ]; then
        if [ -z "$(grep -F "$Proxy" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Others" /tmp/Proxy_Group)" ];then
          LOG_OUT "Warning: Because of The Different Porxy-Group's Name, Stop Setting The Other Rules!"
-         yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}"
+         yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}"
          exit 0
        fi
    elif [ "$rule_name" = "ConnersHua" ]; then
@@ -967,7 +969,7 @@ if [ "$1" != "0" ]; then
     || [ -z "$(grep -F "$Others" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Domestic" /tmp/Proxy_Group)" ]; then
          LOG_OUT "Warning: Because of The Different Porxy-Group's Name, Stop Setting The Other Rules!"
-         yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}"  "${11}" "${12}"
+         yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}"  "${11}" "${12}" "${13}"
          exit 0
        fi
    elif [ "$rule_name" = "lhie1" ]; then
@@ -987,9 +989,10 @@ if [ "$1" != "0" ]; then
     || [ -z "$(grep -F "$Disney" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Discovery" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$DAZN" /tmp/Proxy_Group)" ]\
-    || [ -z "$(grep -F "$ChatGPT" /tmp/Proxy_Group)" ]\
+    || [ -z "$(grep -F "$OpenAI" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Spotify" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Steam" /tmp/Proxy_Group)" ]\
+    || [ -z "$(grep -F "$miHoYo" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$AdBlock" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Speedtest" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Telegram" /tmp/Proxy_Group)" ]\
@@ -999,15 +1002,16 @@ if [ "$1" != "0" ]; then
     || [ -z "$(grep -F "$PayPal" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Others" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$GoogleFCM" /tmp/Proxy_Group)" ]\
+    || [ -z "$(grep -F "$AntiIP" /tmp/Proxy_Group)" ]\
     || [ -z "$(grep -F "$Domestic" /tmp/Proxy_Group)" ]; then
          LOG_OUT "Warning: Because of The Different Porxy-Group's Name, Stop Setting The Other Rules!"
-         yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}"
+         yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}"
          exit 0
        fi
    fi
    if [ -z "$Proxy" ]; then
       LOG_OUT "Error: Missing Porxy-Group's Name, Stop Setting The Other Rules!"
-      yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}"
+      yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}"
       exit 0
    else
       if [ "$rule_name" = "lhie1" ]; then
@@ -1031,67 +1035,71 @@ if [ "$1" != "0" ]; then
             Value['script']=Value_1['script'];
             Value['rules']=Value_1['rules'];
             Value['rules'].to_a.collect!{|x|
-            x.to_s.gsub(/,Bilibili,Asian TV$/, ',Bilibili,$Bilibili#delete_')
-            .gsub(/,Bahamut,Global TV$/, ',Bahamut,$Bahamut#delete_')
-            .gsub(/,HBO Max,Global TV$/, ',HBO Max,$HBOMax#delete_')
-            .gsub(/,HBO Go,Global TV$/, ',HBO Go,$HBOGo#delete_')
-            .gsub(/,Discovery Plus,Global TV$/, ',Discovery Plus,$Discovery#delete_')
-            .gsub(/,DAZN,Global TV$/, ',DAZN,$DAZN#delete_')
-            .gsub(/,Pornhub,Global TV$/, ',Pornhub,$Pornhub#delete_')
-            .gsub(/,Global TV$/, ',$GlobalTV#delete_')
-            .gsub(/,Asian TV$/, ',$AsianTV#delete_')
-            .gsub(/,Proxy$/, ',$Proxy#delete_')
-            .gsub(/,YouTube$/, ',$Youtube#delete_')
-            .gsub(/,Apple$/, ',$Apple#delete_')
-            .gsub(/,Apple TV$/, ',$AppleTV#delete_')
-            .gsub(/,Scholar$/, ',$Scholar#delete_')
-            .gsub(/,Netflix$/, ',$Netflix#delete_')
-            .gsub(/,Disney$/, ',$Disney#delete_')
-            .gsub(/,Spotify$/, ',$Spotify#delete_')
-            .gsub(/,ChatGPT$/, ',$ChatGPT#delete_')
-            .gsub(/,Steam$/, ',$Steam#delete_')
-            .gsub(/,AdBlock$/, ',$AdBlock#delete_')
-            .gsub(/,Speedtest$/, ',$Speedtest#delete_')
-            .gsub(/,Telegram$/, ',$Telegram#delete_')
-            .gsub(/,Crypto$/, ',$Crypto#delete_')
-            .gsub(/,Discord$/, ',$Discord#delete_')
-            .gsub(/,Microsoft$/, ',$Microsoft#delete_')
-            .to_s.gsub(/,PayPal$/, ',$PayPal#delete_')
-            .gsub(/,Domestic$/, ',$Domestic#delete_')
-            .gsub(/,Others$/, ',$Others#delete_')
-            .gsub(/,Google FCM$/, ',$GoogleFCM#delete_')
+            x.to_s.gsub(/,[\s]?Bilibili,[\s]?Asian TV$/, ', Bilibili, $Bilibili#delete_')
+            .gsub(/,[\s]?Bahamut,[\s]?Global TV$/, ', Bahamut, $Bahamut#delete_')
+            .gsub(/,[\s]?HBO Max,[\s]?Global TV$/, ', HBO Max, $HBOMax#delete_')
+            .gsub(/,[\s]?HBO Go,[\s]?Global TV$/, ', HBO Go, $HBOGo#delete_')
+            .gsub(/,[\s]?Discovery Plus,[\s]?Global TV$/, ', Discovery Plus, $Discovery#delete_')
+            .gsub(/,[\s]?DAZN,[\s]?Global TV$/, ', DAZN, $DAZN#delete_')
+            .gsub(/,[\s]?Pornhub,[\s]?Global TV$/, ', Pornhub, $Pornhub#delete_')
+            .gsub(/,[\s]?Anti IP$/, ', $AntiIP#delete_')
+            .gsub(/,[\s]?Global TV$/, ', $GlobalTV#delete_')
+            .gsub(/,[\s]?Asian TV$/, ', $AsianTV#delete_')
+            .gsub(/,[\s]?Proxy$/, ', $Proxy#delete_')
+            .gsub(/,[\s]?YouTube$/, ', $Youtube#delete_')
+            .gsub(/,[\s]?Apple$/, ', $Apple#delete_')
+            .gsub(/,[\s]?Apple TV$/, ', $AppleTV#delete_')
+            .gsub(/,[\s]?Scholar$/, ', $Scholar#delete_')
+            .gsub(/,[\s]?Netflix$/, ', $Netflix#delete_')
+            .gsub(/,[\s]?Disney$/, ', $Disney#delete_')
+            .gsub(/,[\s]?Spotify$/, ', $Spotify#delete_')
+            .gsub(/,[\s]?OpenAI$/, ', $OpenAI#delete_')
+            .gsub(/,[\s]?Steam$/, ', $Steam#delete_')
+            .gsub(/,[\s]?miHoYo$/, ', $miHoYo#delete_')
+            .gsub(/,[\s]?AdBlock$/, ', $AdBlock#delete_')
+            .gsub(/,[\s]?Speedtest$/, ', $Speedtest#delete_')
+            .gsub(/,[\s]?Telegram$/, ', $Telegram#delete_')
+            .gsub(/,[\s]?Crypto$/, ', $Crypto#delete_')
+            .gsub(/,[\s]?Discord$/, ', $Discord#delete_')
+            .gsub(/,[\s]?Microsoft$/, ', $Microsoft#delete_')
+            .to_s.gsub(/,[\s]?PayPal$/, ', $PayPal#delete_')
+            .gsub(/,[\s]?Domestic$/, ', $Domestic#delete_')
+            .gsub(/,[\s]?Others$/, ', $Others#delete_')
+            .gsub(/,[\s]?Google FCM$/, ', $GoogleFCM#delete_')
             .gsub(/#delete_/, '')
             };
-            Value['script']['code'].to_s.gsub!(/\"Bilibili\": \"Asian TV\"/,'\"Bilibili\": \"$Bilibili#delete_\"')
-            .gsub!(/\"Bahamut\": \"Global TV\"/,'\"Bahamut\": \"$Bahamut#delete_\"')
-            .gsub!(/\"HBO Max\": \"Global TV\"/,'\"HBO Max\": \"$HBOMax#delete_\"')
-            .gsub!(/\"HBO Go\": \"Global TV\"/,'\"HBO Go\": \"$HBOGo#delete_\"')
-            .gsub!(/\"Discovery Plus\": \"Global TV\"/,'\"Discovery Plus\": \"$Discovery#delete_\"')
-            .gsub!(/\"DAZN\": \"Global TV\"/,'\"DAZN\": \"$DAZN#delete_\"')
-            .gsub!(/\"Pornhub\": \"Global TV\"/,'\"Pornhub\": \"$Pornhub#delete_\"')
-            .gsub!(/: \"Global TV\"/,': \"$GlobalTV#delete_\"')
-            .gsub!(/: \"Asian TV\"/,': \"$AsianTV#delete_\"')
-            .gsub!(/: \"Proxy\"/,': \"$Proxy#delete_\"')
-            .gsub!(/: \"YouTube\"/,': \"$Youtube#delete_\"')
-            .gsub!(/: \"Apple\"/,': \"$Apple#delete_\"')
-            .gsub!(/: \"Apple TV\"/,': \"$AppleTV#delete_\"')
-            .gsub!(/: \"Scholar\"/,': \"$Scholar#delete_\"')
-            .gsub!(/: \"Netflix\"/,': \"$Netflix#delete_\"')
-            .gsub!(/: \"Disney\"/,': \"$Disney#delete_\"')
-            .gsub!(/: \"Spotify\"/,': \"$Spotify#delete_\"')
-            .gsub!(/: \"ChatGPT\"/,': \"$ChatGPT#delete_\"')
-            .gsub!(/: \"Steam\"/,': \"$Steam#delete_\"')
-            .gsub!(/: \"AdBlock\"/,': \"$AdBlock#delete_\"')
-            .gsub!(/: \"Speedtest\"/,': \"$Speedtest#delete_\"')
-            .gsub!(/: \"Telegram\"/,': \"$Telegram#delete_\"')
-            .gsub!(/: \"Crypto\"/,': \"$Crypto#delete_\"')
-            .gsub!(/: \"Discord\"/,': \"$Discord#delete_\"')
-            .gsub!(/: \"Microsoft\"/,': \"$Microsoft#delete_\"')
-            .gsub!(/: \"PayPal\"/,': \"$PayPal#delete_\"')
-            .gsub!(/: \"Domestic\"/,': \"$Domestic#delete_\"')
-            .gsub!(/: \"Google FCM\"/,': \"$GoogleFCM#delete_\"')
-            .gsub!(/return \"Domestic\"$/, 'return \"$Domestic#delete_\"')
-            .gsub!(/return \"Others\"$/, 'return \"$Others#delete_\"')
+            Value['script']['code'].to_s.gsub!(/\'Bilibili\': \'Asian TV\'/,'\'Bilibili\': \'$Bilibili#delete_\'')
+            .gsub!(/\'Bahamut\': \'Global TV\'/,'\'Bahamut\': \'$Bahamut#delete_\'')
+            .gsub!(/\'HBO Max\': \'Global TV\'/,'\'HBO Max\': \'$HBOMax#delete_\'')
+            .gsub!(/\'HBO Go\': \'Global TV\'/,'\'HBO Go\': \'$HBOGo#delete_\'')
+            .gsub!(/\'Discovery Plus\': \'Global TV\'/,'\'Discovery Plus\': \'$Discovery#delete_\'')
+            .gsub!(/\'DAZN\': \'Global TV\'/,'\'DAZN\': \'$DAZN#delete_\'')
+            .gsub!(/\'Pornhub\': \'Global TV\'/,'\'Pornhub\': \'$Pornhub#delete_\'')
+            .gsub!(/: \'Global TV\'/,': \'$GlobalTV#delete_\'')
+            .gsub!(/: \'Asian TV\'/,': \'$AsianTV#delete_\'')
+            .gsub!(/: \'Proxy\'/,': \'$Proxy#delete_\'')
+            .gsub!(/: \'YouTube\'/,': \'$Youtube#delete_\'')
+            .gsub!(/: \'Apple\'/,': \'$Apple#delete_\'')
+            .gsub!(/: \'Apple TV\'/,': \'$AppleTV#delete_\'')
+            .gsub!(/: \'Scholar\'/,': \'$Scholar#delete_\'')
+            .gsub!(/: \'Netflix\'/,': \'$Netflix#delete_\'')
+            .gsub!(/: \'Disney\'/,': \'$Disney#delete_\'')
+            .gsub!(/: \'Spotify\'/,': \'$Spotify#delete_\'')
+            .gsub!(/: \'OpenAI\'/,': \'$OpenAI#delete_\'')
+            .gsub!(/: \'Steam\'/,': \'$Steam#delete_\'')
+            .gsub!(/: \'miHoYo\'/,': \'$miHoYo#delete_\'')
+            .gsub!(/: \'AdBlock\'/,': \'$AdBlock#delete_\'')
+            .gsub!(/: \'Speedtest\'/,': \'$Speedtest#delete_\'')
+            .gsub!(/: \'Telegram\'/,': \'$Telegram#delete_\'')
+            .gsub!(/: \'Crypto\'/,': \'$Crypto#delete_\'')
+            .gsub!(/: \'Discord\'/,': \'$Discord#delete_\'')
+            .gsub!(/: \'Microsoft\'/,': \'$Microsoft#delete_\'')
+            .gsub!(/: \'PayPal\'/,': \'$PayPal#delete_\'')
+            .gsub!(/: \'Domestic\'/,': \'$Domestic#delete_\'')
+            .gsub!(/: \'Google FCM\'/,': \'$GoogleFCM#delete_\'')
+            .gsub!(/: \'Anti IP\'/,': \'$AntiIP#delete_\'')
+            .gsub!(/return \'Domestic\'$/, 'return \'$Domestic#delete_\'')
+            .gsub!(/return \'Others\'$/, 'return \'$Others#delete_\'')
             .gsub!(/#delete_/, '');
             File.open('$3','w') {|f| YAML.dump(Value, f)};
          rescue Exception => e
@@ -1155,4 +1163,4 @@ if [ "$1" != "0" ]; then
    fi
 fi
 
-yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}"
+yml_other_set "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}"

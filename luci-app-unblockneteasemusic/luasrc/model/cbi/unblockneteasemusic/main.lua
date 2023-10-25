@@ -24,7 +24,6 @@ o:value("qq", translate("QQ音乐"))
 o:value("youtube", translate("Youtube音乐"))
 o:value("youtubedl", translate("Youtube音乐（youtube-dl）"))
 o:value("ytdlp", translate("Youtube音乐（yt-dlp）"))
-o:value("ytdownload", translate("Youtube音乐（ytdownload）"))
 o.description = translate("自定义模式下，多个音源请用空格隔开")
 o.default = "default"
 o.rmempty = false
@@ -46,7 +45,7 @@ o.datatype = "string"
 o:depends("use_custom_cookie", 1)
 
 o = s:option(Value, "qq_cookie", translate("QQ Cookie"))
-o.description = translate("在 y.qq.com 获取，需要 uin 和 qm_keyst值 ")
+o.description = translate("在 y.qq.com 获取，需要 uin 和 qm_keyst值")
 o.placeholder = "uin=; qm_keyst="
 o.datatype = "string"
 o:depends("use_custom_cookie", 1)

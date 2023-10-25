@@ -105,12 +105,13 @@ fi
 
 # Convert kernel repo to api format
 [[ "${kernel_repo}" =~ ^https: ]] && kernel_repo="$(echo ${kernel_repo} | awk -F'/' '{print $4"/"$5}')"
-kernel_api="https://api.github.com/repos/${kernel_repo}"
+kernel_api="https://github.com/${kernel_repo}"
 if [[ -n "${KERNEL_TAGS}" ]]; then
     kernel_tag="${KERNEL_TAGS}"
 else
     [[ "${SOC}" == "rk3588" ]] && kernel_tag="rk3588" || kernel_tag="stable"
 fi
+kernel_tag="${kernel_tag/kernel_/}"
 
 # Step 2: Check if there is the latest kernel version
 check_kernel() {
@@ -141,12 +142,10 @@ check_kernel() {
 
     # Check the version on the server
     latest_version="$(
-        curl -s \
-            -H "Accept: application/vnd.github+json" \
-            ${kernel_api}/releases/tags/kernel_${kernel_tag} |
-            jq -r '.assets[].name' |
-            grep -oE "${main_line_version}\.[0-9]+" |
-            sort -rV | head -n 1
+        curl -fsSL \
+            ${kernel_api}/releases/expanded_assets/kernel_${kernel_tag} |
+            grep -oE "${main_line_version}.[0-9]+.tar.gz" | sed 's/.tar.gz//' |
+            sort -urV | head -n 1
     )"
     [[ -n "${latest_version}" ]] || tolog "02.03 No kernel available, please use another kernel branch." "1"
 
@@ -174,19 +173,22 @@ download_kernel() {
     fi
 
     # Delete other residual kernel files
-    rm -f ${KERNEL_DOWNLOAD_PATH}/*.tar.gz 2>/dev/null && sync
-    rm -f ${KERNEL_DOWNLOAD_PATH}/sha256sums 2>/dev/null && sync
+    rm -f ${KERNEL_DOWNLOAD_PATH}/*.tar.gz
+    rm -f ${KERNEL_DOWNLOAD_PATH}/sha256sums
+    rm -rf ${KERNEL_DOWNLOAD_PATH}/${download_version}*
 
     kernel_down_from="https://github.com/${kernel_repo}/releases/download/kernel_${kernel_tag}/${download_version}.tar.gz"
     wget "${kernel_down_from}" -q -P "${KERNEL_DOWNLOAD_PATH}"
     [[ "${?}" -ne "0" ]] && tolog "03.03 The kernel download failed." "1"
 
-    tar -xf "${KERNEL_DOWNLOAD_PATH}/${download_version}.tar.gz" -C "${KERNEL_DOWNLOAD_PATH}"
+    tar -xf ${KERNEL_DOWNLOAD_PATH}/${download_version}.tar.gz -C ${KERNEL_DOWNLOAD_PATH}
     [[ "${?}" -ne "0" ]] && tolog "03.04 Kernel decompression failed." "1"
-    mv -f ${KERNEL_DOWNLOAD_PATH}/${download_version}/* -t ${KERNEL_DOWNLOAD_PATH}
+    mv -f ${KERNEL_DOWNLOAD_PATH}/${download_version}/* ${KERNEL_DOWNLOAD_PATH}/
 
     sync && sleep 3
-    rm -rf "${KERNEL_DOWNLOAD_PATH}/${download_version}.tar.gz" "${KERNEL_DOWNLOAD_PATH}/${download_version}"
+    # Delete the downloaded kernel file
+    rm -f ${KERNEL_DOWNLOAD_PATH}/${download_version}.tar.gz
+    rm -rf ${KERNEL_DOWNLOAD_PATH}/${download_version}
 
     tolog "03.05 The kernel is ready, you can update."
     sleep 2

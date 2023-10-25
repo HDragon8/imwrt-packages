@@ -20,6 +20,7 @@ RUNNING_LOG="${TMP_CHECK_DIR}/amlogic_running_script.log"
 LOG_FILE="${TMP_CHECK_DIR}/amlogic.log"
 support_platform=("allwinner" "rockchip" "amlogic" "qemu-aarch64")
 LOGTIME="$(date "+%Y-%m-%d %H:%M:%S")"
+
 [[ -d ${TMP_CHECK_DIR} ]] || mkdir -p ${TMP_CHECK_DIR}
 rm -f ${TMP_CHECK_DIR}/*.ipk 2>/dev/null && sync
 rm -f ${TMP_CHECK_DIR}/sha256sums 2>/dev/null && sync
@@ -91,6 +92,7 @@ sleep 2
 
 # 01. Query local version information
 tolog "01. Query current version information."
+
 current_plugin_v="$(opkg list-installed | grep 'luci-app-amlogic' | awk '{print $3}')"
 tolog "01.01 current version: ${current_plugin_v}"
 sleep 2
@@ -98,18 +100,21 @@ sleep 2
 # 02. Check the version on the server
 tolog "02. Start querying plugin version..."
 
-# Query the latest version
+# Get the latest version
 latest_version="$(
-    curl -s \
-        -H "Accept: application/vnd.github+json" \
-        https://api.github.com/repos/ophub/luci-app-amlogic/releases |
-        jq -r '.[].tag_name' |
-        sort -rV | head -n 1
+    curl -fsSL \
+        https://github.com/ophub/luci-app-amlogic/releases |
+        grep -oE 'expanded_assets/[0-9]+.[0-9]+.[0-9]+(-[0-9]+)?' | sed 's|expanded_assets/||' |
+        sort -urV | head -n 1
 )"
-[[ -n "${latest_version}" ]] || tolog "02.01 Query failed, please try again." "1"
-tolog "02.01 current version: ${current_plugin_v}, Latest version: ${latest_version}"
-sleep 2
+if [[ -z "${latest_version}" ]]; then
+    tolog "02.01 Query failed, please try again." "1"
+else
+    tolog "02.01 current version: ${current_plugin_v}, Latest version: ${latest_version}"
+    sleep 2
+fi
 
+# Compare the version and download the latest version
 if [[ "${current_plugin_v}" == "${latest_version}" ]]; then
     tolog "02.02 Already the latest version, no need to update." "1"
 else
@@ -143,6 +148,6 @@ tolog "03. The plug is ready, you can update."
 sleep 2
 
 #echo '<a href=upload>Update</a>' >$START_LOG
-tolog '<input type="button" class="cbi-button cbi-button-reload" value="Update" onclick="return amlogic_plugin(this)"/> Latest version: '${server_plugin_version}'' "1"
+tolog '<input type="button" class="cbi-button cbi-button-reload" value="Update" onclick="return amlogic_plugin(this)"/> Latest version: '${latest_version}'' "1"
 
 exit 0
