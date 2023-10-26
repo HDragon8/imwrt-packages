@@ -43,7 +43,7 @@ git clone --depth 1 https://github.com/NateLol/luci-app-beardropper
 git clone --depth 1 https://github.com/yaof2/luci-app-ikoolproxy
 git clone --depth 1 https://github.com/project-lede/luci-app-godproxy
 git clone --depth 1 https://github.com/sbwml/openwrt-alist && mvdir openwrt-alist
-git clone --depth 1 https://github.com/tty228/luci-app-serverchan
+git clone --depth 1https://github.com/tty228/luci-app-wechatpush
 git clone --depth 1 https://github.com/4IceG/luci-app-sms-tool smstool && mvdir smstool
 git clone --depth 1 https://github.com/shanglanxin/luci-app-homebridge
 git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff
@@ -103,7 +103,7 @@ git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config
 git clone --depth 1 https://github.com/esirplayground/LingTiGameAcc
 git clone --depth 1 https://github.com/esirplayground/luci-app-LingTiGameAcc
 git clone --depth 1 -b master https://github.com/UnblockNeteaseMusic/luci-app-unblockneteasemusic
-git clone --depth 1 https://github.com/AlexZhuo/luci-app-bandwidthd
+#git clone --depth 1 https://github.com/AlexZhuo/luci-app-bandwidthd
 
 #svn export https://github.com/coolsnowwolf/luci/trunk/libs/luci-lib-ipkg
 svn export https://github.com/kiddin9/openwrt-packages/trunk/luci-app-fileassistant
