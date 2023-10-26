@@ -43,7 +43,7 @@ git clone --depth 1 https://github.com/NateLol/luci-app-beardropper
 git clone --depth 1 https://github.com/yaof2/luci-app-ikoolproxy
 git clone --depth 1 https://github.com/project-lede/luci-app-godproxy
 git clone --depth 1 https://github.com/sbwml/openwrt-alist && mvdir openwrt-alist
-git clone --depth 1https://github.com/tty228/luci-app-wechatpush
+git clone --depth 1 https://github.com/tty228/luci-app-wechatpush
 git clone --depth 1 https://github.com/4IceG/luci-app-sms-tool smstool && mvdir smstool
 git clone --depth 1 https://github.com/shanglanxin/luci-app-homebridge
 git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff
@@ -95,7 +95,7 @@ git clone --depth 1 https://github.com/Hyy2001X/AutoBuild-Packages && rm -rf Aut
 git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go ddns-go && mvdir ddns-go
 #git_clone https://github.com/sirpdboy/netspeedtest && mv -n netspeedtest/luci-app-netspeedtest ./ ; rm -rf netspeedtest
 git clone --depth 1 https://github.com/sirpdboy/netspeedtest && mvdir netspeedtest
-git clone --depth 1 https://github.com/HDragon8/add_openwrt_Build_name
+#git clone --depth 1 https://github.com/HDragon8/add_openwrt_Build_name
 git clone --depth 1 https://github.com/gngpp/luci-app-design-config
 git clone --depth 1 -b js https://github.com/gngpp/luci-theme-design
 git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon
@@ -104,6 +104,7 @@ git clone --depth 1 https://github.com/esirplayground/LingTiGameAcc
 git clone --depth 1 https://github.com/esirplayground/luci-app-LingTiGameAcc
 git clone --depth 1 -b master https://github.com/UnblockNeteaseMusic/luci-app-unblockneteasemusic
 #git clone --depth 1 https://github.com/AlexZhuo/luci-app-bandwidthd
+git clone --depth 1 https://github.com/sirpdboy/chatgpt-web
 
 #svn export https://github.com/coolsnowwolf/luci/trunk/libs/luci-lib-ipkg
 svn export https://github.com/kiddin9/openwrt-packages/trunk/luci-app-fileassistant
