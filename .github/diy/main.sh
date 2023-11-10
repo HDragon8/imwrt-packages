@@ -22,7 +22,7 @@ git clone --depth 1 https://github.com/kiddin9/luci-theme-edge
 git clone --depth 1 https://github.com/kiddin9/openwrt-amule-dlp && mvdir openwrt-amule-dlp
 git clone --depth 1 https://github.com/yichya/luci-app-xray
 git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall-packages && mvdir openwrt-passwall-packages
-git clone --depth 1 https://github.com/fw876/helloworld && mvdir helloworld
+git clone --depth 1 -b main https://github.com/fw876/helloworld && mvdir helloworld
 git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall passwall1 && mv -n passwall1/luci-app-passwall  ./; rm -rf passwall1
 git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall2 passwall2 && mv -n passwall2/luci-app-passwall2 ./;rm -rf passwall2
 git clone --depth 1 https://github.com/Lienol/openwrt-package
