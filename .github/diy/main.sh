@@ -106,6 +106,9 @@ git clone --depth 1 -b master https://github.com/UnblockNeteaseMusic/luci-app-un
 #git clone --depth 1 https://github.com/AlexZhuo/luci-app-bandwidthd
 git clone --depth 1 https://github.com/sirpdboy/chatgpt-web
 
+git clone --depth 1 https://github.com/brvphoenix/luci-app-wrtbwmon wrtbwmon1 && mvdir wrtbwmon1
+git clone --depth 1 https://github.com/brvphoenix/wrtbwmon wrtbwmon2 && mvdir wrtbwmon2
+
 #svn export https://github.com/coolsnowwolf/luci/trunk/libs/luci-lib-ipkg
 svn export https://github.com/kiddin9/openwrt-packages/trunk/luci-app-fileassistant
 svn export https://github.com/immortalwrt/luci/trunk/applications/luci-app-filebrowser
