@@ -176,7 +176,7 @@ return view.extend({
         o.default = "UseIP";
         o.modalonly = true;
 
-        o = ss.taboption('general', form.Value, 'domain_resolve_dns', _('Resolve Domain via DNS'), _("Specify a DNS to resolve server hostname. Only works for main balancers (those on General Settings tab)."));
+        o = ss.taboption('general', form.Value, 'domain_resolve_dns', _('Resolve Domain via DNS'), _("Specify a DNS to resolve server hostname. Be careful of possible recursion."));
         o.datatype = 'hostport';
         o.modalonly = true;
 
@@ -184,7 +184,10 @@ return view.extend({
         o.datatype = 'port';
         o.rmempty = false;
 
-        o = ss.taboption('general', form.Value, 'password', _('UserId / Password'), _('Fill user_id for vmess / VLESS, or password for shadowsocks / trojan (also supports <a href="https://github.com/XTLS/Xray-core/issues/158">Xray UUID Mapping</a>)'));
+        o = ss.taboption('general', form.Value, 'username', _('Email / Username'), _('Optional; username for SOCKS / HTTP outbound, email for other outbound.'));
+        o.modalonly = true;
+
+        o = ss.taboption('general', form.Value, 'password', _('UserId / Password'), _('Fill user_id for vmess / VLESS, or password for other outbound (also supports <a href="https://github.com/XTLS/Xray-core/issues/158">Xray UUID Mapping</a>)'));
         o.modalonly = true;
         o.rmempty = false;
 
