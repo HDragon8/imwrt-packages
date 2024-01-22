@@ -1,11 +1,14 @@
 m = Map("mosdns")
 
-s = m:section(TypedSection, "mosdns", translate("Update GeoIP & GeoSite dat"))
+s = m:section(TypedSection, "mosdns", translate("Geodata Update"))
 s.addremove = false
 s.anonymous = true
 
-o = s:option(Flag, "geo_auto_update", translate("Enable Auto Database Update"))
-o.rmempty = false
+enable = s:option(Flag, "geo_auto_update", translate("Enable Auto Database Update"))
+enable.rmempty = false
+
+enable = s:option(Flag, "syncconfig", translate("Enable Config Update"))
+enable.rmempty = false
 
 o = s:option(ListValue, "geo_update_week_time", translate("Update Cycle"))
 o:value("*", translate("Every Day"))
@@ -16,22 +19,19 @@ o:value("4", translate("Every Thursday"))
 o:value("5", translate("Every Friday"))
 o:value("6", translate("Every Saturday"))
 o:value("7", translate("Every Sunday"))
-o.default = "3"
+o.default = "*"
 
-o = s:option(ListValue, "geo_update_day_time", translate("Update Time"))
+update_time = s:option(ListValue, "geo_update_day_time", translate("Update Time (Every Day)"))
 for t = 0, 23 do
-    o:value(t, t..":00")
+  update_time:value(t, t..":00")
 end
-default = 3
+update_time.default = 0
 
-o = s:option(Value, "github_proxy", translate("GitHub Proxy"), translate("Update data files with GitHub Proxy, leave blank to disable proxy downloads."))
-o:value("https://gh-proxy.com", translate("https://gh-proxy.com"))
-o:value("https://ghps.cc", translate("https://ghps.cc"))
-o.rmempty = true
-o.default = ""
-
-o = s:option(Button, "geo_update_database", translate("Database Update"))
-o.rawhtml = true
-o.template = "mosdns/mosdns_geo_update"
+data_update = s:option(Button, "geo_update_database", translate("Database Update"))
+data_update.inputtitle = translate("Check And Update")
+data_update.inputstyle = "reload"
+data_update.write = function()
+  luci.sys.exec("/etc/mosdns/mosupdater.sh &> /dev/null &")
+end
 
 return m
