@@ -111,8 +111,8 @@ get_bind_ip() {
 # 定义基本 HTTP 命令和参数
 gen_http_cmd() {
 	_http_cmd="https://tisu-api-v3.speedtest.cn/speedUp/query" 
- 	#_http_cmd1="ipinfo.io/ip/"ip备用
-  	_http_cmd1="http://myip.ipip.net/"
+ 	_http_cmd1="ipinfo.io/ip/"
+  	#_http_cmd1="http://myip.ipip.net/"失效
 	_http_cmd2="https://tisu-api.speedtest.cn/api/v2/speedup/reopen"
 	return 1
 }
@@ -334,7 +334,7 @@ broadband_init() {
 	_log "宽带助手正在启动..."
 
 	# 检查外部调用工具
-	command -v wget-ssl >/dev/null || { _log "GNU Wget-ssl 未安装,尝试安装中..."; opkg update; opkg install wget-ssl; }
+	command -v wget-ssl >/dev/null || { _log "GNU Wget-ssl 未安装,尝试安装中...可能需要几分钟"; opkg update; opkg install wget-ssl; }
 	command -v wget-ssl >/dev/null || { _log "GNU Wget-ssl 正在创建软链接"; ln -s /usr/libexec/wget-ssl /usr/bin/wget-ssl; }
 	command -v wget-ssl >/dev/null || { _log "GNU Wget-ssl 安装失败，尝试其他版本或反馈作者修复"; return 3; }
 
