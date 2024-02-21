@@ -2,24 +2,49 @@
 
 import { access } from "fs";
 import { fake_dns_domains } from "./fake_dns.mjs";
+import { direct_outbound } from "./outbound.mjs";
 
 const fallback_fast_dns = "223.5.5.5:53";
 const fallback_secure_dns = "8.8.8.8:53";
 const fallback_default_dns = "1.1.1.1:53";
 const geosite_existence = access("/usr/share/xray/geosite.dat") || false;
 
-function split_ipv4_host_port(val, port_default) {
-    const result = match(val, /([0-9\.]+):([0-9]+)/);
-    if (result == null) {
+function parse_ip_port(val, port_default) {
+    const split_dot = split(val, ".");
+    if (length(split_dot) > 1) {
+        const split_ipv4 = split(val, ":");
         return {
-            address: val,
-            port: int(port_default)
+            ip: split_ipv4[0],
+            port: int(split_ipv4[1])
         };
     }
-
+    const split_ipv6_port = split(val, "]:");
+    if (length(split_ipv6_port) == 2) {
+        return {
+            ip: ltrim(split_ipv6_port[0], "["),
+            port: int(split_ipv6_port[1]),
+        };
+    }
     return {
-        address: result[1],
-        port: int(result[2])
+        ip: val,
+        port: port_default
+    };
+}
+
+function format_dns(method, val) {
+    const parsed = parse_ip_port(val, 53);
+    if (method == "udp") {
+        return {
+            address: parsed["ip"],
+            port: parsed["port"]
+        };
+    }
+    let url_suffix = "";
+    if (substr(method, 0, 5) == "https") {
+        url_suffix = "/dns-query";
+    }
+    return {
+        address: `${method}://${val}${url_suffix}`
     };
 }
 
@@ -51,7 +76,7 @@ export function dns_server_inbounds(proxy) {
     let result = [];
     const dns_port = int(proxy["dns_port"] || 5300);
     const dns_count = int(proxy["dns_count"] || 3);
-    const default_dns = split_ipv4_host_port(proxy["default_dns"] || fallback_default_dns, 53);
+    const default_dns = format_dns("udp", proxy["default_dns"] || fallback_default_dns);
     for (let i = dns_port; i <= dns_port + dns_count; i++) {
         push(result, {
             port: i,
@@ -67,34 +92,66 @@ export function dns_server_inbounds(proxy) {
     return result;
 };
 
-export function dns_server_tags(proxy) {
-    let result = [];
+export function dns_rules(proxy, tcp_hijack_inbound_tags, udp_hijack_inbound_tags) {
     const dns_port = int(proxy["dns_port"] || 5300);
     const dns_count = int(proxy["dns_count"] || 3);
+    let dns_server_tags = [];
     for (let i = dns_port; i <= dns_port + dns_count; i++) {
-        push(result, sprintf("dns_server_inbound:%d", i));
+        push(dns_server_tags, sprintf("dns_server_inbound:%d", i));
+    }
+    let result = [
+        {
+            type: "field",
+            inboundTag: dns_server_tags,
+            outboundTag: "dns_server_outbound"
+        },
+    ];
+    if (proxy.dns_tcp_hijack) {
+        push(result, {
+            type: "field",
+            port: "53",
+            inboundTag: tcp_hijack_inbound_tags,
+            outboundTag: "dns_tcp_hijack_outbound"
+        });
+    }
+    if (proxy.dns_udp_hijack) {
+        push(result, {
+            type: "field",
+            port: "53",
+            inboundTag: udp_hijack_inbound_tags,
+            outboundTag: "dns_udp_hijack_outbound"
+        });
     }
     return result;
 };
 
-export function dns_server_outbound() {
-    return {
-        protocol: "dns",
-        settings: {
-            nonIPQuery: "skip"
-        },
-        streamSettings: {
-            sockopt: {
-                mark: 254
-            }
-        },
-        tag: "dns_server_outbound"
-    };
+export function dns_server_outbounds(proxy) {
+    let result = [
+        {
+            protocol: "dns",
+            settings: {
+                nonIPQuery: "skip"
+            },
+            streamSettings: {
+                sockopt: {
+                    mark: 254
+                }
+            },
+            tag: "dns_server_outbound"
+        }
+    ];
+    if (proxy.dns_tcp_hijack) {
+        push(result, direct_outbound("dns_tcp_hijack_outbound", proxy.dns_tcp_hijack));
+    }
+    if (proxy.dns_udp_hijack) {
+        push(result, direct_outbound("dns_udp_hijack_outbound", proxy.dns_udp_hijack));
+    }
+    return result;
 };
 
 export function dns_conf(proxy, config, manual_tproxy, fakedns) {
-    const fast_dns_object = split_ipv4_host_port(proxy["fast_dns"] || fallback_fast_dns, 53);
-    const default_dns_object = split_ipv4_host_port(proxy["default_dns"] || fallback_default_dns, 53);
+    const fast_dns_object = format_dns("udp", proxy["fast_dns"] || fallback_fast_dns);
+    const default_dns_object = format_dns("udp", proxy["default_dns"] || fallback_default_dns);
 
     let domain_names_set = {};
     let domain_extra_options = {};
@@ -104,19 +161,31 @@ export function dns_conf(proxy, config, manual_tproxy, fakedns) {
             continue;
         }
         if (server["domain_resolve_dns"]) {
-            domain_extra_options[server["server"]] = server["domain_resolve_dns"];
+            domain_extra_options[server["server"]] = `${server["domain_resolve_dns_method"] || "udp"};${server["domain_resolve_dns"]}`;
         } else {
             domain_names_set[`domain:${server["server"]}`] = true;
         }
     }
 
+    let resolve_merged = {};
+    for (let k in keys(domain_extra_options)) {
+        const v = domain_extra_options[k];
+        let original = resolve_merged[v] || [];
+        push(original, `domain:${k}`);
+        resolve_merged[v] = original;
+    }
+
     let servers = [
         ...fake_dns_domains(fakedns),
-        ...map(keys(domain_extra_options), function (k) {
-            const i = split_ipv4_host_port(domain_extra_options[k]);
-            i["domains"] = [`domain:${k}`];
-            i["skipFallback"] = true;
-            return i;
+        ...map(keys(resolve_merged), function (k) {
+            const dns_split = split(k, ";");
+            const resolve_dns_object = format_dns(dns_split[0], dns_split[1]);
+            return {
+                address: resolve_dns_object["address"],
+                port: resolve_dns_object["port"],
+                domains: uniq(resolve_merged[k]),
+                skipFallback: true,
+            };
         }),
         default_dns_object,
         {
@@ -128,7 +197,7 @@ export function dns_conf(proxy, config, manual_tproxy, fakedns) {
     ];
 
     if (length(secure_domain_rules(proxy)) > 0) {
-        const secure_dns_object = split_ipv4_host_port(proxy["secure_dns"] || fallback_secure_dns, 53);
+        const secure_dns_object = format_dns("udp", proxy["secure_dns"] || fallback_secure_dns);
         push(servers, {
             address: secure_dns_object["address"],
             port: secure_dns_object["port"],
@@ -157,4 +226,19 @@ export function dns_conf(proxy, config, manual_tproxy, fakedns) {
         tag: "dns_conf_inbound",
         queryStrategy: "UseIP"
     };
+};
+
+export function dns_direct_servers(config) {
+    let result = [];
+    for (let server in filter(values(config), i => i[".type"] == "servers")) {
+        if (iptoarr(server["server"])) {
+            continue;
+        }
+        if (server["domain_resolve_dns"]) {
+            if (index(server["domain_resolve_dns_method"], "local") > 1) {
+                push(result, parse_ip_port(server["domain_resolve_dns"])["ip"]);
+            }
+        }
+    }
+    return result;
 };

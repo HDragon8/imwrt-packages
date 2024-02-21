@@ -4,9 +4,13 @@ Focus on making the most of Xray (HTTP/HTTPS/Socks/TProxy inbounds, multiple pro
 
 ## Warnings
 
+* For security concerns, global SOCKS / HTTP inbound (listen on 0.0.0.0, port 1080 / 1081 by default) is deprecated and will be removed in next major version (4.0.0). 
+    * These settings are moved out of main luci app. Select "Preview or Deprecated" in "Extra Settings" tab and reboot to let those settings show again in preview app.
+    * Use Extra Inbound to manually add ports (avoid using common ports like 1080, also set listen addresses carefully) and adjust related workloads to use that.
 * Since version 3.2.0 sniffing and global custom settings are deprecated. 
-    * These features are moved out of main luci app. Select "Preview or Deprecated" in "Extra Settings" tab and reboot to let those settings show again in preview app.
-    * These likely to be removed in version 4.0.0. Use FakeDNS instead of sniffing and use "Custom Configuration Hook" for global custom settings. 
+    * These features are moved out of main luci app (into preview app). 
+    * Global custom settings will be removed in version 4.0.0. Use "Custom Configuration Hook" for global custom settings. 
+    * Sniffing might get completely reimplemented later. Use FakeDNS instead of sniffing to avoid incompatibilities.
 * This project **DOES NOT SUPPORT** the following versions of OpenWrt because of the requirements of firewall4 and cilent-side rendering LuCI:
     * LEDE / OpenWrt prior to 22.03
     * [Lean's OpenWrt Source](https://github.com/coolsnowwolf/lede) (which uses a variant of LuCI shipped with OpenWrt 18.06)
@@ -36,9 +40,19 @@ Fork this repository and:
 * Wait until actions finish
 * Use `opkg -i *` to install both ipks from Releases.
 
+## Changelog since 3.4.0
+
+* 2024-02-18 chore: optimize code style; bump version
+* 2024-02-19 fix: several DNS related validation
+* 2024-02-20 fix: domain match priority; stricter resolve options; socks / http auth
+
 ## Changelog since 3.3.0
 
 * 2024-01-19 chore: bump version
+* 2024-01-24 feat: add alias to LAN Hosts Access Control
+* 2024-02-04 fix: avoid firewall restart failure & some minor adjustments
+* 2024-02-16 feat: dns hijacking preview; deprecate global http / socks inbound
+* 2024-02-17 feat: add username / password for extra socks / http inbound
 
 ## Changelog since 3.2.0
 

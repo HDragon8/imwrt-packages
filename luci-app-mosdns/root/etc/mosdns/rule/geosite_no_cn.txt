@@ -249,7 +249,9 @@
 4kup.net
 4mydomain.com
 4myminicard.com
+4pcdn.org
 4pig.com
+4plebs.org
 4porn.com
 4porn4.com
 4pu.com
@@ -694,6 +696,7 @@ advertfan.com
 advertisercommunity.com
 adx.promo
 ae
+ae-ad-1.myhuaweicloud.com
 ae.hao123.com
 ae.org
 aeasyshop.com
@@ -728,6 +731,7 @@ africamagic
 ag
 aga-expo.com
 agakhan
+agedm.org
 agendaweek.com
 agoogleaday.com
 agu.org
@@ -808,6 +812,8 @@ akademiye.org
 akadns.com
 akadns.net
 akadns6.net
+akadns88.net
+akadns99.net
 akaeai.com
 akafms.net
 akagtm.org
@@ -828,7 +834,6 @@ akamai-sucks.net
 akamai-thailand.com
 akamai-thailand.net
 akamai-trials.com
-akamai.com
 akamai.net
 akamaiedge.net
 akamaientrypoint.net
@@ -1232,6 +1237,7 @@ ap-singapore.myqcloud.com
 ap-southeast-1.myhuaweicloud.com
 ap-southeast-2.myhuaweicloud.com
 ap-southeast-3.myhuaweicloud.com
+ap-southeast-4.myhuaweicloud.com
 ap-tokyo.myqcloud.com
 ap.org
 ap0le.com
@@ -1692,6 +1698,7 @@ avinin.com
 avizoon.site
 avizoone.com
 avjb.com
+avjiasu.com
 avjoy.me
 avjzy67.xyz
 avlulu.cc
@@ -2509,6 +2516,7 @@ binance.net
 binance.org
 binance.vision
 binanceapi.com
+binancecnt.com
 binancezh.biz
 binancezh.cc
 binancezh.co
@@ -2531,6 +2539,7 @@ bingagencyawards.com
 bingapis.com
 bingapistatistics.com
 bingo
+bingparachute.com
 bingsandbox.com
 bingvisualsearch.com
 bingworld.com
@@ -5312,6 +5321,7 @@ edgecastcdn.net
 edgedatg.com
 edgefonts.net
 edgekey.net
+edgekey88.net
 edgemeplease.com
 edgesuite.net
 edicypages.com
@@ -5607,6 +5617,7 @@ eu-consumer-empowerment.com
 eu-frankfurt.myqcloud.com
 eu-moscow.myqcloud.com
 eu-west-0.myhuaweicloud.com
+eu-west-101.myhuaweicloud.com
 eu.org
 eubluecardvisa.com
 eucasino.com
@@ -7191,6 +7202,7 @@ globalrescue.net
 globalriskregulator.com
 globalsecurity.org
 globalsign-media.com
+globalsign.cloud
 globalsign.net
 globalspec.com
 globaltm.org
@@ -8414,6 +8426,7 @@ hulustream.com
 huluteam.com
 hulutv.com
 huluusa.com
+humanparty.me
 humanrightspressawards.org
 humblebundle.com
 humoron.com
@@ -9263,6 +9276,7 @@ javmoo.xyz
 javmost.com
 javmost.xyz
 javmuch.com
+javmulu.net
 javnew.net
 javopen.co
 javout.co
@@ -9831,6 +9845,7 @@ latrobe
 latticedata.com
 launchpad.net
 launchpad.wang
+launchpadcontent.net
 launchpadlibrarian.com
 launchpadlibrarian.net
 launchpadlibrarian.org
@@ -10528,6 +10543,7 @@ mdnkids.com
 mdpi.com
 mdpj-mov.shop
 mdpjoin.buzz
+me-east-1.myhuaweicloud.com
 me-gay.com
 me.com
 me.me
@@ -15731,6 +15747,7 @@ tenacy.com
 tenbyfotolia.com
 tencent.design
 tennic
+tenor.com
 tensorflow.org
 tenzinpalmo.com
 terabox.com
@@ -16197,6 +16214,7 @@ toytractorshow.com
 tparents.org
 tpornstars.com
 tr
+tr-west-1.myhuaweicloud.com
 tr.com
 tracfone.com
 tracking-location.com
@@ -16956,6 +16974,7 @@ virgin
 virginpornlinks.com
 virsto.com
 virsto.net
+virtualbox.org
 virtualearth.net
 virtualpartyworld.com
 virtualporn.com
@@ -17408,6 +17427,8 @@ wetnhorny.com
 wetplace.com
 wetpussygames.com
 wetsextube.com
+wetv.vip
+wetvinfo.com
 wexiaobo.org
 wezhiyong.org
 wezone.net
@@ -18812,6 +18833,7 @@ full:cbsi.live.ott.irdeto.com
 full:cbsplaylistserver.aws.syncbak.com
 full:cbsservice.aws.syncbak.com
 full:cdn-spotify-experiments.conductrics.com
+full:cdn.js7k.com
 full:cdn.jsdelivr.net
 full:cdngarenanow-a.akamaihd.net
 full:chat.openai.com.cdn.cloudflare.net
@@ -19090,6 +19112,7 @@ full:vscode.blob.core.windows.net
 full:vscode.search.windows.net
 full:vsmarketplacebadge.apphb.com
 full:weblive-hamivideo.cdn.hinet.net
+full:wetv.qq.com
 full:widgets.stripst.com
 full:wip.adobe.com
 full:wip1.adobe.com

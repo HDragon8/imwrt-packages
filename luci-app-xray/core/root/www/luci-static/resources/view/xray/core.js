@@ -42,14 +42,15 @@ function list_folded_format(config_data, k, noun, max_chars, mapping, empty) {
     };
 }
 
-function destination_format(config_data, k, max_chars, null_itatic) {
-    const null_placeholder = function () {
-        if (null_itatic) {
-            return `<i>${_("direct")}</i>`;
+function destination_format(config_data, k, e, max_chars) {
+    return function (s) {
+        if (e) {
+            if (!uci.get(config_data, s, e)) {
+                return `<i>${_("use global settings")}</i>`;
+            }
         }
-        return _("direct");
-    }();
-    return list_folded_format(config_data, k, "outbounds", max_chars, v => uci.get(config_data, v, "alias"), null_placeholder);
+        return list_folded_format(config_data, k, "outbounds", max_chars, v => uci.get(config_data, v, "alias"), `<i>${_("direct")}</i>`)(s);
+    };
 }
 
 function extra_outbound_format(config_data, s, select_item) {
@@ -191,17 +192,6 @@ return view.extend({
         o.datatype = 'host';
         o.rmempty = false;
 
-        o = ss.taboption('general', form.ListValue, 'domain_strategy', _('Domain Strategy'), _("Whether to use IPv4 or IPv6 address if Server Hostname is a domain."));
-        o.value("UseIP");
-        o.value("UseIPv4");
-        o.value("UseIPv6");
-        o.default = "UseIP";
-        o.modalonly = true;
-
-        o = ss.taboption('general', form.Value, 'domain_resolve_dns', _('Resolve Domain via DNS'), _("Specify a DNS to resolve server hostname. Be careful of possible recursion."));
-        o.datatype = 'hostport';
-        o.modalonly = true;
-
         o = ss.taboption('general', form.Value, 'server_port', _('Server Port'));
         o.datatype = 'port';
         o.rmempty = false;
@@ -212,6 +202,29 @@ return view.extend({
         o = ss.taboption('general', form.Value, 'password', _('UserId / Password'), _('Fill user_id for vmess / VLESS, or password for other outbound (also supports <a href="https://github.com/XTLS/Xray-core/issues/158">Xray UUID Mapping</a>)'));
         o.modalonly = true;
         o.rmempty = false;
+
+        ss.tab('resolving', _("Server Hostname Resolving"));
+
+        o = ss.taboption('resolving', form.ListValue, 'domain_strategy', _('Domain Strategy'), _("Whether to use IPv4 or IPv6 address if Server Hostname is a domain."));
+        o.value("UseIP");
+        o.value("UseIPv4");
+        o.value("UseIPv6");
+        o.default = "UseIP";
+        o.modalonly = true;
+
+        o = ss.taboption('resolving', form.Value, 'domain_resolve_dns', _('Resolve Domain via DNS'), _("Specify a DNS to resolve server hostname. Be careful of possible recursion."));
+        o.datatype = "or(ipaddr, ipaddrport(1))";
+        o.modalonly = true;
+
+        o = ss.taboption('resolving', form.ListValue, 'domain_resolve_dns_method', _('Resolve Domain DNS Method'), _("Effective when DNS above is set. Direct methods will bypass Xray completely so it may get blocked."));
+        o.value("udp", _("UDP"));
+        o.value("quic+local", _("DNS over QUIC (direct)"));
+        o.value("tcp", _("TCP"));
+        o.value("tcp+local", _("TCP (direct)"));
+        o.value("https", _("DNS over HTTPS"));
+        o.value("https+local", _("DNS over HTTPS (direct)"));
+        o.default = "UseIP";
+        o.modalonly = true;
 
         ss.tab('protocol', _('Protocol Settings'));
 
@@ -242,14 +255,6 @@ return view.extend({
         o.validate = shared.validate_object;
 
         s.tab('inbounds', _('Inbounds'));
-
-        o = s.taboption('inbounds', form.Value, 'socks_port', _('Socks5 proxy port'));
-        o.datatype = 'port';
-        o.placeholder = 1080;
-
-        o = s.taboption('inbounds', form.Value, 'http_port', _('HTTP proxy port'));
-        o.datatype = 'port';
-        o.placeholder = 1081;
 
         o = s.taboption('inbounds', form.Value, 'tproxy_port_tcp_v4', _('Transparent proxy port (TCP4)'));
         o.datatype = 'port';
@@ -292,15 +297,26 @@ return view.extend({
         inbound_type.value("tproxy_udp", _("Transparent Proxy (UDP)"));
         inbound_type.rmempty = false;
 
-        let specify_outbound = extra_inbounds.option(form.Flag, 'specify_outbound', _('Specify Outbound'), _('If not selected, this inbound will use global settings (including sniffing settings). '));
+        let inbound_username = extra_inbounds.option(form.Value, "inbound_username", _("Username (Optional)"));
+        inbound_username.depends("inbound_type", "socks5");
+        inbound_username.depends("inbound_type", "http");
+        inbound_username.modalonly = true;
+
+        let inbound_password = extra_inbounds.option(form.Value, "inbound_password", _("Password (Optional)"));
+        inbound_password.depends("inbound_type", "socks5");
+        inbound_password.depends("inbound_type", "http");
+        inbound_password.modalonly = true;
+
+        let specify_outbound = extra_inbounds.option(form.Flag, 'specify_outbound', _('Specify Outbound'), _('If not selected, this inbound will use global settings (including sniffing settings).'));
         specify_outbound.modalonly = true;
 
         let destination = extra_inbounds.option(form.MultiValue, 'destination', _('Destination'), _("Select multiple outbounds for load balancing. If none selected, requests will be sent via direct outbound."));
         destination.depends("specify_outbound", "1");
         destination.datatype = "uciname";
-        destination.textvalue = destination_format(config_data, "destination", 60, true);
+        destination.textvalue = destination_format(config_data, "destination", "specify_outbound", 60);
 
         let balancer_strategy = extra_inbounds.option(form.Value, 'balancer_strategy', _('Balancer Strategy'), _('Strategy <code>leastPing</code> requires observatory (see "Extra Options" tab) to be enabled.'));
+        balancer_strategy.depends("specify_outbound", "1");
         balancer_strategy.value("random");
         balancer_strategy.value("leastPing");
         balancer_strategy.value("roundRobin");
@@ -497,11 +513,11 @@ return view.extend({
 
         let fake_dns_forward_server_tcp = fs.option(form.MultiValue, 'fake_dns_forward_server_tcp', _('Force Forward server (TCP)'));
         fake_dns_forward_server_tcp.datatype = "uciname";
-        fake_dns_forward_server_tcp.textvalue = destination_format(config_data, "fake_dns_forward_server_tcp", 40, true);
+        fake_dns_forward_server_tcp.textvalue = destination_format(config_data, "fake_dns_forward_server_tcp", null, 40);
 
         let fake_dns_forward_server_udp = fs.option(form.MultiValue, 'fake_dns_forward_server_udp', _('Force Forward server (UDP)'));
         fake_dns_forward_server_udp.datatype = "uciname";
-        fake_dns_forward_server_udp.textvalue = destination_format(config_data, "fake_dns_forward_server_udp", 40, true);
+        fake_dns_forward_server_udp.textvalue = destination_format(config_data, "fake_dns_forward_server_udp", null, 40);
 
         let fake_dns_balancer_strategy = fs.option(form.Value, 'fake_dns_balancer_strategy', _('Balancer Strategy'), _('Strategy <code>leastPing</code> requires observatory (see "Extra Options" tab) to be enabled.'));
         fake_dns_balancer_strategy.value("random");
