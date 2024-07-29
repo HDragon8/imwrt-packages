@@ -65,44 +65,54 @@ o.default = "eth1"
 o:depends({ [option_name("protocol")] = "_iface" })
 
 local nodes_table = {}
-local balancers_table = {}
 local iface_table = {}
 for k, e in ipairs(api.get_valid_nodes()) do
 	if e.node_type == "normal" then
 		nodes_table[#nodes_table + 1] = {
 			id = e[".name"],
-			remarks = e["remark"]
+			remark = e["remark"],
+			type = e["type"]
 		}
 	end
 	if e.protocol == "_iface" then
 		iface_table[#iface_table + 1] = {
 			id = e[".name"],
-			remarks = e["remark"]
+			remark = e["remark"]
 		}
 	end
 end
+
+local socks_list = {}
+uci:foreach(appname, "socks", function(s)
+	if s.enabled == "1" and s.node then
+		socks_list[#socks_list + 1] = {
+			id = "Socks_" .. s[".name"],
+			remark = translate("Socks Config") .. " [" .. s.port .. "端口]"
+		}
+	end
+end)
 
 -- [[ 分流模块 ]]
 if #nodes_table > 0 then
 	o = s:option(Flag, option_name("preproxy_enabled"), translate("Preproxy"))
 	o:depends({ [option_name("protocol")] = "_shunt" })
 
-	o = s:option(Value, option_name("main_node"), string.format('<a style="color:red">%s</a>', translate("Preproxy Node")), translate("Set the node to be used as a pre-proxy. Each rule (including <code>Default</code>) has a separate switch that controls whether this rule uses the pre-proxy or not."))
+	o = s:option(ListValue, option_name("main_node"), string.format('<a style="color:red">%s</a>', translate("Preproxy Node")), translate("Set the node to be used as a pre-proxy. Each rule (including <code>Default</code>) has a separate switch that controls whether this rule uses the pre-proxy or not."))
 	o:depends({ [option_name("protocol")] = "_shunt", [option_name("preproxy_enabled")] = true })
-	for k, v in pairs(balancers_table) do
-		o:value(v.id, v.remarks)
+	for k, v in pairs(socks_list) do
+		o:value(v.id, v.remark)
 	end
 	for k, v in pairs(iface_table) do
-		o:value(v.id, v.remarks)
+		o:value(v.id, v.remark)
 	end
 	for k, v in pairs(nodes_table) do
-		o:value(v.id, v.remarks)
+		o:value(v.id, v.remark)
 	end
 	o.default = "nil"
 end
 uci:foreach(appname, "shunt_rules", function(e)
 	if e[".name"] and e.remarks then
-		o = s:option(Value, option_name(e[".name"]), string.format('* <a href="%s" target="_blank">%s</a>', api.url("shunt_rules", e[".name"]), e.remarks))
+		o = s:option(ListValue, option_name(e[".name"]), string.format('* <a href="%s" target="_blank">%s</a>', api.url("shunt_rules", e[".name"]), e.remarks))
 		o:value("nil", translate("Close"))
 		o:value("_default", translate("Default"))
 		o:value("_direct", translate("Direct Connection"))
@@ -110,18 +120,18 @@ uci:foreach(appname, "shunt_rules", function(e)
 		o:depends({ [option_name("protocol")] = "_shunt" })
 
 		if #nodes_table > 0 then
-			for k, v in pairs(balancers_table) do
-				o:value(v.id, v.remarks)
+			for k, v in pairs(socks_list) do
+				o:value(v.id, v.remark)
 			end
 			for k, v in pairs(iface_table) do
-				o:value(v.id, v.remarks)
+				o:value(v.id, v.remark)
 			end
 			local pt = s:option(ListValue, option_name(e[".name"] .. "_proxy_tag"), string.format('* <a style="color:red">%s</a>', e.remarks .. " " .. translate("Preproxy")))
 			pt:value("nil", translate("Close"))
 			pt:value("main", translate("Preproxy Node"))
 			pt.default = "nil"
 			for k, v in pairs(nodes_table) do
-				o:value(v.id, v.remarks)
+				o:value(v.id, v.remark)
 				pt:depends({ [option_name("protocol")] = "_shunt", [option_name("preproxy_enabled")] = true, [option_name(e[".name"])] = v.id })
 			end
 		end
@@ -136,24 +146,24 @@ o.cfgvalue = function(t, n)
 end
 o:depends({ [option_name("protocol")] = "_shunt" })
 
-local o = s:option(Value, option_name("default_node"), string.format('* <a style="color:red">%s</a>', translate("Default")))
+local o = s:option(ListValue, option_name("default_node"), string.format('* <a style="color:red">%s</a>', translate("Default")))
 o:depends({ [option_name("protocol")] = "_shunt" })
 o:value("_direct", translate("Direct Connection"))
 o:value("_blackhole", translate("Blackhole"))
 
 if #nodes_table > 0 then
-	for k, v in pairs(balancers_table) do
-		o:value(v.id, v.remarks)
+	for k, v in pairs(socks_list) do
+		o:value(v.id, v.remark)
 	end
 	for k, v in pairs(iface_table) do
-		o:value(v.id, v.remarks)
+		o:value(v.id, v.remark)
 	end
 	local dpt = s:option(ListValue, option_name("default_proxy_tag"), string.format('* <a style="color:red">%s</a>', translate("Default Preproxy")), translate("When using, localhost will connect this node first and then use this node to connect the default node."))
 	dpt:value("nil", translate("Close"))
 	dpt:value("main", translate("Preproxy Node"))
 	dpt.default = "nil"
 	for k, v in pairs(nodes_table) do
-		o:value(v.id, v.remarks)
+		o:value(v.id, v.remark)
 		dpt:depends({ [option_name("protocol")] = "_shunt", [option_name("preproxy_enabled")] = true, [option_name("default_node")] = v.id })
 	end
 end
@@ -352,9 +362,8 @@ o = s:option(Flag, option_name("tls"), translate("TLS"))
 o.default = 0
 o:depends({ [option_name("protocol")] = "vmess" })
 o:depends({ [option_name("protocol")] = "vless" })
-o:depends({ [option_name("protocol")] = "socks" })
+o:depends({ [option_name("protocol")] = "http" })
 o:depends({ [option_name("protocol")] = "trojan" })
-o:depends({ [option_name("protocol")] = "shadowsocks" })
 
 o = s:option(ListValue, option_name("alpn"), translate("alpn"))
 o.default = "default"
@@ -466,6 +475,13 @@ if singbox_tags:find("with_wireguard") then
 
 	o = s:option(Value, option_name("wireguard_mtu"), translate("MTU"))
 	o.default = "1420"
+	o:depends({ [option_name("protocol")] = "wireguard" })
+
+	o = s:option(Flag, option_name("wireguard_system_interface"), translate("System interface"))
+	o.default = 0
+	o:depends({ [option_name("protocol")] = "wireguard" })
+
+	o = s:option(Value, option_name("wireguard_interface_name"), translate("System interface name"))
 	o:depends({ [option_name("protocol")] = "wireguard" })
 
 	o = s:option(Value, option_name("wireguard_reserved"), translate("Reserved"), translate("Decimal numbers separated by \",\" or Base64-encoded strings."))
@@ -624,5 +640,26 @@ o:value("v2ray-plugin")
 
 o = s:option(Value, option_name("plugin_opts"), translate("opts"))
 o:depends({ [option_name("plugin_enabled")] = true })
+
+o = s:option(ListValue, option_name("domain_strategy"), translate("Domain Strategy"), translate("If is domain name, The requested domain name will be resolved to IP before connect."))
+o.default = "prefer_ipv6"
+o:value("prefer_ipv4")
+o:value("prefer_ipv6")
+o:value("ipv4_only")
+o:value("ipv6_only")
+
+o = s:option(ListValue, option_name("to_node"), translate("Landing node"), translate("Only support a layer of proxy."))
+o.default = ""
+o:value("", translate("Close(Not use)"))
+for k, v in pairs(nodes_table) do
+	if v.type == "sing-box" then
+		o:value(v.id, v.remark)
+	end
+end
+for i, v in ipairs(s.fields[option_name("protocol")].keylist) do
+	if not v:find("_") then
+		o:depends({ [option_name("protocol")] = v })
+	end
+end
 
 api.luci_types(arg[1], m, s, type_name, option_prefix)

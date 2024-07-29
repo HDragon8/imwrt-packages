@@ -215,7 +215,6 @@ o.validate = function(self, value, t)
 	end
 end
 o:depends({ [option_name("protocol")] = "http" })
-o:depends({ [option_name("protocol")] = "shadowsocks" })
 o:depends({ [option_name("protocol")] = "vmess" })
 o:depends({ [option_name("protocol")] = "vless" })
 o:depends({ [option_name("protocol")] = "trojan" })
@@ -224,10 +223,9 @@ if singbox_tags:find("with_reality_server") then
 	-- [[ REALITY部分 ]] --
 	o = s:option(Flag, option_name("reality"), translate("REALITY"))
 	o.default = 0
-	o:depends({ [option_name("protocol")] = "vless", [option_name("tls")] = true })
-	o:depends({ [option_name("protocol")] = "vmess", [option_name("tls")] = true })
-	o:depends({ [option_name("protocol")] = "shadowsocks", [option_name("tls")] = true })
 	o:depends({ [option_name("protocol")] = "http", [option_name("tls")] = true })
+	o:depends({ [option_name("protocol")] = "vmess", [option_name("tls")] = true })
+	o:depends({ [option_name("protocol")] = "vless", [option_name("tls")] = true })
 	o:depends({ [option_name("protocol")] = "trojan", [option_name("tls")] = true })
 
 	o = s:option(Value, option_name("reality_private_key"), translate("Private Key"))
@@ -367,7 +365,7 @@ o = s:option(Value, option_name("tcpbrutal_down_mbps"), translate("Max download 
 o.default = "50"
 o:depends({ [option_name("tcpbrutal")] = true })
 
-o = s:option(Flag, option_name("bind_local"), translate("Bind Local"), translate("When selected, it can only be accessed locally, It is recommended to turn on when using reverse proxies or be fallback."))
+o = s:option(Flag, option_name("bind_local"), translate("Bind Local"), translate("When selected, it can only be accessed localhost."))
 o.default = "0"
 
 o = s:option(Flag, option_name("accept_lan"), translate("Accept LAN Access"), translate("When selected, it can accessed lan , this will not be safe!"))

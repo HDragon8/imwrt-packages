@@ -2,6 +2,7 @@
 <%
 local api = require "luci.passwall.api"
 -%>
+<script src="<%=resource%>/qrcode.min.js"></script>
 <script type="text/javascript">//<![CDATA[
 	let has_singbox = "<%=api.finded_com("singbox")%>"
 	let has_xray = "<%=api.finded_com("xray")%>"
@@ -72,6 +73,20 @@ local api = require "luci.passwall.api"
 		};
 		return r;
 	}
+	
+	function genQrcode(btn, urlname, sid) {
+		var qrcode_div = document.getElementById("qrcode_div");
+		qrcode_div.style.display = null;
+		document.getElementById("qrcode").innerHTML = "";
+		var url = buildUrl(btn, urlname, sid);
+		if (url) {
+			var qrcode = new QRCode(document.getElementById("qrcode"), {
+				width: 150,
+				height: 150
+			});
+			qrcode.makeCode(url);
+		}
+	}
 
 	function buildUrl(btn, urlname, sid) {
 		var opt = {
@@ -99,27 +114,26 @@ local api = require "luci.passwall.api"
 				}
 				return ret;
 			},
-			query: function (param, src, default_value, tval = "1", fval = "0") {
-				var ret = "&" + param + "=";
+			query: function (param, src, default_value) {
 				var obj = this.get(src);
 				if (obj) {
+					var ret = "&" + param + "=";
 					if (obj.type === "checkbox") {
-						return ret + (obj.checked === true ? tval : fval);
+						return ret + (obj.checked === true ? "1" : "0");
 					} else {
 						var result = encodeURIComponent(obj.value);
-						if ((result == null || result.trim() == "") && default_value)
-							result = default_value;
-						return ret + result;
+						if (result == null || result.trim() == "") {
+							if (default_value) {
+								return ret + default_value;
+							}
+							return "";
+						} else {
+							return ret + result;
+						}
 					}
 				}
-				return ""
+				return "";
 			}
-		}
-
-		var s = document.getElementById(urlname + "-status");
-		if (!s) {
-			alert("Never");
-			return false;
 		}
 		opt.base = "cbid." + urlname + "." + sid;
 		opt.client = urlname.indexOf("server") === -1;
@@ -225,6 +239,10 @@ local api = require "luci.passwall.api"
 			if (v_transport === "ws") {
 				info.host = opt.get(dom_prefix + "ws_host").value;
 				info.path = opt.get(dom_prefix + "ws_path").value;
+				if (v_type == "sing-box" && opt.get(dom_prefix + "ws_enableEarlyData").checked) {
+					var ws_maxEarlyData = opt.get(dom_prefix + "ws_maxEarlyData").value;
+					info.path = info.path + "?ed=" + ws_maxEarlyData;
+				}
 			} else if (v_transport === "h2") {
 				info.host = opt.get(dom_prefix + "h2_host").value;
 				info.path = opt.get(dom_prefix + "h2_path").value;
@@ -269,6 +287,10 @@ local api = require "luci.passwall.api"
 			if (v_transport === "ws") {
 				params += opt.query("host", dom_prefix + "ws_host");
 				params += opt.query("path", dom_prefix + "ws_path");
+				if (v_type == "sing-box" && opt.get(dom_prefix + "ws_enableEarlyData").checked) {
+					var ws_maxEarlyData = opt.get(dom_prefix + "ws_maxEarlyData").value;
+					params += "?ed=" + ws_maxEarlyData;
+				}
 			} else if (v_transport === "h2") {
 				v_transport = "http";
 				params += opt.query("host", dom_prefix + "h2_host");
@@ -376,12 +398,27 @@ local api = require "luci.passwall.api"
 		}
 		if (url) {
 			url = protocol.toLowerCase() + "://" + url;
+			return url;
+		} else {
+			alert("<%:Not a supported scheme:%> " + v_type);
+		}
+		return false;
+	}
+	
+	function exportUrl(btn, urlname, sid) {
+		var url = buildUrl(btn, urlname, sid);
+		if (url) {
 			var textarea = document.createElement("textarea");
 			textarea.textContent = url;
 			textarea.style.position = "fixed";
 			document.body.appendChild(textarea);
 			textarea.select();
 			try {
+				var s = document.getElementById(urlname + "-status");
+				if (!s) {
+					alert("Never");
+					return false;
+				}
 				document.execCommand("copy"); // Security exception may be thrown by some browsers.
 				s.innerHTML = "<font color='green'><%:Share URL to clipboard successfully.%></font>";
 			} catch (ex) {
@@ -389,11 +426,7 @@ local api = require "luci.passwall.api"
 			} finally {
 				document.body.removeChild(textarea);
 			}
-			//alert(url);
-		} else {
-			alert("<%:Not a supported scheme:%> " + v_type);
 		}
-		return false;
 	}
 
 	function fromUrl(btn, urlname, sid) {
@@ -704,6 +737,24 @@ local api = require "luci.passwall.api"
 			} else if (ssm.net === "ws") {
 				opt.set(dom_prefix + 'ws_host', ssm.host);
 				opt.set(dom_prefix + 'ws_path', ssm.path);
+				if (dom_prefix == "singbox_" && ssm.path && ssm.path.length > 1) {
+					var ws_path_params = {};
+					var ws_path_dat = ssm.path.split('?');
+					var ws_path = ws_path_dat[0];
+					var ws_path_params = {};
+					var ws_path_params_array = ws_path_dat[1].split('&');
+					for (i = 0; i < ws_path_params_array.length; i++) {
+						var kv = ws_path_params_array[i].split('=');
+						ws_path_params[decodeURIComponent(kv[0]).toLowerCase()] = decodeURIComponent(kv[1] || '');
+					}
+					
+					if (ws_path_params.ed) {
+						opt.set(dom_prefix + 'ws_path', ws_path);
+						opt.set(dom_prefix + 'ws_enableEarlyData', true);
+						opt.set(dom_prefix + 'ws_maxEarlyData', ws_path_params.ed);
+						opt.set(dom_prefix + 'ws_earlyDataHeaderName', 'Sec-WebSocket-Protocol');
+					}
+				}
 			} else if (ssm.net === "h2") {
 				opt.set(dom_prefix + 'h2_host', ssm.host);
 				opt.set(dom_prefix + 'h2_path', ssm.path);
@@ -793,6 +844,24 @@ local api = require "luci.passwall.api"
 			} else if (queryParam.type === "ws") {
 				opt.set(dom_prefix + 'ws_host', queryParam.host || "");
 				opt.set(dom_prefix + 'ws_path', queryParam.path || "");
+				if (dom_prefix == "singbox_" && queryParam.path && queryParam.path.length > 1) {
+					var ws_path_params = {};
+					var ws_path_dat = queryParam.path.split('?');
+					var ws_path = ws_path_dat[0];
+					var ws_path_params = {};
+					var ws_path_params_array = ws_path_dat[1].split('&');
+					for (i = 0; i < ws_path_params_array.length; i++) {
+						var kv = ws_path_params_array[i].split('=');
+						ws_path_params[decodeURIComponent(kv[0]).toLowerCase()] = decodeURIComponent(kv[1] || '');
+					}
+					
+					if (ws_path_params.ed) {
+						opt.set(dom_prefix + 'ws_path', ws_path);
+						opt.set(dom_prefix + 'ws_enableEarlyData', true);
+						opt.set(dom_prefix + 'ws_maxEarlyData', ws_path_params.ed);
+						opt.set(dom_prefix + 'ws_earlyDataHeaderName', 'Sec-WebSocket-Protocol');
+					}
+				}
 			} else if (queryParam.type === "h2" || queryParam.type === "http") {
 				opt.set(dom_prefix + 'h2_host', queryParam.host || "");
 				opt.set(dom_prefix + 'h2_path', queryParam.path || "");
@@ -877,6 +946,10 @@ local api = require "luci.passwall.api"
 
 //]]></script>
 <input type="button" class="btn cbi-button cbi-button-apply" value='<%:From Share URL%>' onclick="return fromUrl(this, '<%=self.option%>', '<%=self.value%>')" />
-<input type="button" class="btn cbi-button cbi-button-apply" value='<%:Build Share URL%>' onclick="return buildUrl(this, '<%=self.option%>', '<%=self.value%>')" />
+<input type="button" class="btn cbi-button cbi-button-apply" value='<%:Build Share URL%>' onclick="return exportUrl(this, '<%=self.option%>', '<%=self.value%>')" />
+<input type="button" class="btn cbi-button cbi-button-apply" value='<%:Generate QRCode%>' onclick="return genQrcode(this, '<%=self.option%>', '<%=self.value%>')" />
+<div id="qrcode_div" style="margin-top: 1rem;display:none">
+	<div id="qrcode"></div>
+</div>
 <span id="<%=self.option%>-status"></span>
 <%+cbi/valuefooter%>

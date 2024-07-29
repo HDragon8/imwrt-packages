@@ -1,10 +1,10 @@
 local api = require "luci.passwall.api"
-local appname = api.appname
+local appname = "passwall"
 local uci = api.uci
+local has_singbox = api.finded_com("singbox")
 local has_xray = api.finded_com("xray")
 
 m = Map(appname)
-api.set_apply_on_parse(m)
 
 local nodes_table = {}
 for k, e in ipairs(api.get_valid_nodes()) do
@@ -41,6 +41,9 @@ if auto_switch_tip then
 	socks_node.description = auto_switch_tip
 end
 
+o = s:option(Flag, "bind_local", translate("Bind Local"), translate("When selected, it can only be accessed localhost."))
+o.default = "0"
+
 local n = 1
 uci:foreach(appname, "socks", function(s)
 	if s[".name"] == section then
@@ -54,11 +57,15 @@ o.default = n + 1080
 o.datatype = "port"
 o.rmempty = false
 
-if has_xray then
+if has_singbox or has_xray then
 	o = s:option(Value, "http_port", "HTTP " .. translate("Listen Port") .. " " .. translate("0 is not use"))
 	o.default = 0
 	o.datatype = "port"
 end
+
+o = s:option(Flag, "log", translate("Enable") .. " " .. translate("Log"))
+o.default = 1
+o.rmempty = false
 
 o = s:option(Flag, "enable_autoswitch", translate("Auto Switch"))
 o.default = 0

@@ -1,23 +1,23 @@
 local api = require "luci.passwall.api"
-local appname = api.appname
+local appname = "passwall"
 local has_ss = api.is_finded("ss-redir")
 local has_ss_rust = api.is_finded("sslocal")
 local has_trojan_plus = api.is_finded("trojan-plus")
 local has_singbox = api.finded_com("singbox")
 local has_xray = api.finded_com("xray")
 local has_hysteria2 = api.finded_com("hysteria")
-local ss_aead_type = {}
+local ss_type = {}
 local trojan_type = {}
 local vmess_type = {}
 local vless_type = {}
 local hysteria2_type = {}
 if has_ss then
 	local s = "shadowsocks-libev"
-	table.insert(ss_aead_type, s)
+	table.insert(ss_type, s)
 end
 if has_ss_rust then
 	local s = "shadowsocks-rust"
-	table.insert(ss_aead_type, s)
+	table.insert(ss_type, s)
 end
 if has_trojan_plus then
 	local s = "trojan-plus"
@@ -26,7 +26,7 @@ end
 if has_singbox then
 	local s = "sing-box"
 	table.insert(trojan_type, s)
-	table.insert(ss_aead_type, s)
+	table.insert(ss_type, s)
 	table.insert(vmess_type, s)
 	table.insert(vless_type, s)
 	table.insert(hysteria2_type, s)
@@ -34,7 +34,7 @@ end
 if has_xray then
 	local s = "xray"
 	table.insert(trojan_type, s)
-	table.insert(ss_aead_type, s)
+	table.insert(ss_type, s)
 	table.insert(vmess_type, s)
 	table.insert(vless_type, s)
 end
@@ -44,7 +44,6 @@ if has_hysteria2 then
 end
 
 m = Map(appname)
-api.set_apply_on_parse(m)
 
 -- [[ Subscribe Settings ]]--
 s = m:section(TypedSection, "global_subscribe", "")
@@ -61,9 +60,9 @@ o = s:option(DynamicList, "filter_discard_list", translate("Discard List"))
 
 o = s:option(DynamicList, "filter_keep_list", translate("Keep List"))
 
-if #ss_aead_type > 0 then
-	o = s:option(ListValue, "ss_aead_type", translatef("%s Node Use Type", "SS AEAD"))
-	for key, value in pairs(ss_aead_type) do
+if #ss_type > 0 then
+	o = s:option(ListValue, "ss_type", translatef("%s Node Use Type", "Shadowsocks"))
+	for key, value in pairs(ss_type) do
 		o:value(value)
 	end
 end
@@ -104,6 +103,14 @@ if #hysteria2_type > 0 then
 		o.default = "hysteria2"
 	end
 end
+
+o = s:option(ListValue, "domain_strategy", "Sing-box " .. translate("Domain Strategy"), translate("Set the default domain resolution strategy for the sing-box node."))
+o.default = ""
+o:value("", translate("Auto"))
+o:value("prefer_ipv4", translate("Prefer IPv4"))
+o:value("prefer_ipv6", translate("Prefer IPv6"))
+o:value("ipv4_only", translate("IPv4 Only"))
+o:value("ipv6_only", translate("IPv6 Only"))
 
 ---- Subscribe Delete All
 o = s:option(Button, "_stop", translate("Delete All Subscribe Node"))

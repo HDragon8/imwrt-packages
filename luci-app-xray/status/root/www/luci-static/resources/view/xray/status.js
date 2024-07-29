@@ -7,6 +7,13 @@
 'require view';
 'require view.xray.shared as shared';
 
+function bool_translate(v) {
+    if (v === "1") {
+        return _("available");
+    }
+    return _("unavailable");
+}
+
 function greater_than_zero(n) {
     if (n < 0) {
         return 0;
@@ -62,7 +69,7 @@ function get_inbound_uci_description(config, key) {
     }
     const uci_key = key.slice(-9);
     const uci_item = uci.get(config, uci_key);
-    if (uci_item == null) {
+    if (uci_item === null) {
         return key;
     }
     switch (uci_item[".type"]) {
@@ -89,7 +96,7 @@ function get_outbound_uci_description(config, key) {
     }
     const uci_key = key.slice(-9);
     const uci_item = uci.get(config, uci_key);
-    if (uci_item == null) {
+    if (uci_item === null) {
         return "direct";
     }
     switch (uci_item[".type"]) {
@@ -113,7 +120,7 @@ function outbound_first_tag_format(tag_split, first_uci_description) {
     let result = [tag_split[0]];
 
     const first_tag = tag_split[0].split(":");
-    if (first_tag.length == 1) {
+    if (first_tag.length === 1) {
         return result;
     }
 
@@ -193,9 +200,9 @@ function outbound_middle_tag_format(tag_split, first_uci_description, current_ta
 }
 
 function outbound_last_tag_format(first_uci_description, last_tag, last_uci_description) {
-    if (last_tag[0] == "tcp_outbound") {
+    if (last_tag[0] === "tcp_outbound") {
         return shared.badge(`{ tcp: <strong>${first_uci_description}</strong> }`);
-    } else if (last_tag[0] == "udp_outbound") {
+    } else if (last_tag[0] === "udp_outbound") {
         return shared.badge(`{ udp: <strong>${first_uci_description}</strong> }`);
     }
     return shared.badge(`{ ${last_tag[0]}: <strong>${last_uci_description}</strong> }`, last_tag[1]);
@@ -209,7 +216,7 @@ function get_outbound_description(config, tag) {
     for (let i = 1; i < tag_split.length; i++) {
         const current_tag = tag_split[i].split(":");
         const current_uci_description = get_outbound_uci_description(config, current_tag[1]);
-        if (i == tag_split.length - 1) {
+        if (i === tag_split.length - 1) {
             result.push(" ", outbound_last_tag_format(first_uci_description, current_tag, current_uci_description));
         } else {
             result.push(" ", outbound_middle_tag_format(tag_split, first_uci_description, current_tag, current_uci_description));
@@ -240,7 +247,12 @@ function observatory(vars, config) {
                     }
                     return _("<i>unreachable</i>");
                 }(v)),
-                E('td', { 'class': 'td' }, '%d'.format(greater_than_zero(now_timestamp - v[1]["last_seen_time"])) + _('s ago')),
+                E('td', { 'class': 'td' }, function (c) {
+                    if (c[1]["last_seen_time"] === undefined) {
+                        return _("<i>never</i>");
+                    }
+                    return '%d'.format(greater_than_zero(now_timestamp - c[1]["last_seen_time"])) + _('s ago');
+                }(v)),
                 E('td', { 'class': 'td' }, '%d'.format(greater_than_zero(now_timestamp - v[1]["last_try_time"])) + _('s ago')),
             ]))
         ])
@@ -297,17 +309,24 @@ function inbound_stats(vars, config) {
 
 return view.extend({
     load: function () {
-        return uci.load(shared.variant);
+        return Promise.all([
+            uci.load(shared.variant),
+            fs.read("/usr/share/xray/version.txt")
+        ]);
     },
 
-    render: function (config) {
-        if (uci.get_first(config, "general", "metrics_server_enable") != "1") {
+    render: function (load_result) {
+        const config = load_result[0];
+        if (uci.get_first(config, "general", "metrics_server_enable") !== "1") {
             return E([], [
                 E('h2', _('Xray (status)')),
                 E('p', { 'class': 'cbi-map-descr' }, _("Xray metrics server not enabled. Enable Xray metrics server to see details."))
             ]);
         }
-        const info = E('p', { 'class': 'cbi-map-descr' }, _("Collecting data. If any error occurs, check if wget is installed correctly."));
+        const version = load_result[1].split(" ");
+        const stats_available = bool_translate(uci.get_first(config, "general", "stats"));
+        const observatory_available = bool_translate(uci.get_first(config, "general", "observatory"));
+        const info = E('p', { 'class': 'cbi-map-descr' }, `${version[0]} Version ${version[1]} (${version[2]}) Built ${new Date(version[3] * 1000).toLocaleString()}. Statistics: ${stats_available}. Observatory: ${observatory_available}.`);
         const detail = E('div', {});
         poll.add(function () {
             fs.exec_direct("/usr/bin/wget", ["-O", "-", `http://127.0.0.1:${uci.get_first(config, "general", "metrics_server_port") || 18888}/debug/vars`], "json").then(function (vars) {
@@ -319,7 +338,6 @@ return view.extend({
                     ])
                 ]);
                 ui.tabs.initTabGroup(result.lastElementChild.childNodes);
-                dom.content(info, _("Show some statistics of Xray. If nothing here, enable statistics and / or observatory for Xray."));
                 dom.content(detail, result);
             });
         });

@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.8.5
+PKG_VERSION:=1.9.3
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/SagerNet/sing-box/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=0d5e6a7198c3a18491ac35807170715118df2c7b77fd02d16d7cfb5791e368ce
+PKG_HASH:=ab3d321860f973151e773c0c4a1478ab31ed63d89e17c7ac618cf50b232dd1c4
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -46,7 +46,7 @@ define Package/$(PKG_NAME)/description
   Shadowsocks, ShadowTLS, Tor, trojan, VLess, VMess, WireGuard and so on.
 endef
 
-GO_PKG_TARGET_VARS:=$(filter-out CGO_ENABLED=%,$(GO_PKG_TARGET_VARS)) CGO_ENABLED=0
+GO_PKG_TARGET_VARS:=$(filter-out CGO_ENABLED=%,$(GO_PKG_TARGET_VARS)) CGO_ENABLED=1
 
 define Package/$(PKG_NAME)/config
   menu "Customizing build tags"
@@ -77,7 +77,7 @@ define Package/$(PKG_NAME)/config
 
     config SING_BOX_WITH_GVISOR
       bool "Build with gVisor support"
-      default n
+      default y
 
     config SING_BOX_WITH_QUIC
       bool "Build with QUIC support"

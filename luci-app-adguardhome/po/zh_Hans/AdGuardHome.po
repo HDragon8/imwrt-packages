@@ -72,6 +72,10 @@ msgstr "测试版"
 
 msgid "Current core version:"
 msgstr "当前核心版本:"
+
+msgid "core version:"
+msgstr "核心版本:"
+
 msgid "no config"
 msgstr "没有配置文件"
 
